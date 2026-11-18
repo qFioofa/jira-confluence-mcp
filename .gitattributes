@@ -11,7 +11,7 @@ Makefile text eol=lf
 *.json text eol=lf
 *.md text eol=lf
 *.nix text eol=lf
-src/bin/* text eol=lf
+mcp/bin/* text eol=lf
 
 *.png binary
 *.jpg binary
@@ -19,5 +19,3 @@ src/bin/* text eol=lf
 *.woff2 binary
 *.ico binary
 
-src/assets/ui/** linguist-vendored
-src/vendor/** linguist-vendored

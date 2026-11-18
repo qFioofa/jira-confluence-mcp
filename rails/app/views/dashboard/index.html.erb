@@ -1,0 +1,126 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("dashboard.title") %></h1>
+      <%= hint(t("hints.dashboard_active_team")) %>
+    </div>
+    <% if @team %>
+      <p class="page-subtitle">
+        <%= t("dashboard.active_team") %> <strong class="text-base-content"><%= @team.name %></strong>
+        <% if @teams.many? %>
+          · <%= link_to t("dashboard.switch"), teams_path, class: "link link-hover" %>
+        <% end %>
+      </p>
+    <% end %>
+  </div>
+  <% if @team %>
+    <div class="page-actions">
+      <%= link_to t("dashboard.add_project"), new_team_project_path(@team), class: "btn btn-primary btn-sm" %>
+      <%= link_to t("dashboard.add_connection"), new_team_connection_path(@team), class: "btn btn-sm" %>
+    </div>
+  <% end %>
+</div>
+
+<% if @team.nil? %>
+  <div class="empty-state mt-6">
+    <p class="text-base font-medium text-base-content"><%= t("dashboard.no_teams") %></p>
+    <p class="mt-1">Создайте команду, чтобы добавить подключения и проекты.</p>
+    <%= link_to t("dashboard.create_team"), new_team_path, class: "btn btn-primary btn-sm mt-4" %>
+  </div>
+<% else %>
+  <div class="stats-grid mt-6">
+    <div class="stat-card">
+      <div class="stat-label"><%= t("dashboard.stats.projects") %></div>
+      <div class="stat-value"><%= @projects.count %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><%= t("dashboard.stats.connections") %></div>
+      <div class="stat-value"><%= @connections.count %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><%= t("dashboard.stats.endpoints") %></div>
+      <div class="stat-value"><%= @endpoints.count %></div>
+    </div>
+  </div>
+
+  <section class="mt-8">
+    <div class="mb-3 flex items-end justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <h2 class="section-title"><%= t("dashboard.projects_title") %></h2>
+        <%= hint(t("hints.dashboard_projects")) %>
+      </div>
+      <%= link_to t("common.open"), teams_path, class: "link link-hover text-sm" %>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.jira") %></th><th><%= t("common.columns.spaces") %></th><th></th></tr></thead>
+        <tbody>
+          <% @projects.each do |project| %>
+            <tr>
+              <td class="font-medium"><%= project.name %></td>
+              <td class="mono"><%= project.jira_keys.join(", ") %></td>
+              <td class="mono"><%= project.spaces.join(", ") %></td>
+              <td class="text-right"><%= link_to t("common.open"), team_project_path(@team, project), class: "link link-hover" %></td>
+            </tr>
+          <% end %>
+          <% if @projects.empty? %>
+            <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("empty.projects") %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-8">
+    <div class="mb-3 flex items-center gap-2">
+      <h2 class="section-title"><%= t("dashboard.recent_endpoints_title") %></h2>
+      <%= hint(t("hints.dashboard_endpoints")) %>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.project") %></th><th><%= t("common.columns.last_used") %></th><th></th></tr></thead>
+        <tbody>
+          <% @endpoints.each do |endpoint| %>
+            <tr>
+              <td class="font-medium"><%= endpoint.name %></td>
+              <td><%= endpoint.project.name %></td>
+              <td class="text-base-content/60"><%= endpoint.last_used_at || t("common.never") %></td>
+              <td class="text-right"><%= link_to t("common.open"), mcp_endpoints_path, class: "link link-hover" %></td>
+            </tr>
+          <% end %>
+          <% if @endpoints.empty? %>
+            <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("empty.endpoints") %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-8">
+    <div class="mb-3">
+      <h2 class="section-title"><%= t("dashboard.recent_audit_title") %></h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th><%= t("common.columns.time") %></th><th><%= t("common.columns.action") %></th><th><%= t("common.columns.target") %></th><th><%= t("common.columns.actor") %></th></tr></thead>
+        <tbody>
+          <% @audit_events.each do |event| %>
+            <tr>
+              <td class="mono text-base-content/60"><%= event.created_at.utc.iso8601 %></td>
+              <td class="font-medium"><%= event.action %></td>
+              <td class="mono"><%= [event.target_type, event.target_id].compact.join("#") %></td>
+              <td><%= event.actor&.email || "—" %></td>
+            </tr>
+          <% end %>
+          <% if @audit_events.empty? %>
+            <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("empty.audit") %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+<% end %>

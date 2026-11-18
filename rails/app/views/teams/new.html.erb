@@ -1,0 +1,23 @@
+<div class="page-header">
+  <div><h1 class="page-title"><%= t("teams.new_title") %></h1></div>
+  <div class="page-actions"><%= link_to t("common.back"), teams_path, class: "btn btn-sm" %></div>
+</div>
+
+<%= form_with model: @team, class: "panel form-panel mt-6" do |form| %>
+  <div class="panel-body gap-4">
+    <% if @team.errors.any? %>
+      <div class="alert alert-error"><%= @team.errors.full_messages.to_sentence %></div>
+    <% end %>
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :name, t("fields.name"), t("hints.team_name")) %>
+      <%= form.text_field :name, required: true, class: "input w-full" %>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :slug, t("fields.slug"), t("hints.team_slug")) %>
+      <%= form.text_field :slug, required: true, placeholder: t("placeholders.team_slug"), class: "input w-full" %>
+    </div>
+    <div class="card-actions justify-end">
+      <%= form.submit t("teams.create"), class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

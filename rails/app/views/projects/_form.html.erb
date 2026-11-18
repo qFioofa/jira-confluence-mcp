@@ -1,0 +1,32 @@
+<% if project.errors.any? %>
+  <div class="alert alert-error"><%= project.errors.full_messages.to_sentence %></div>
+<% end %>
+
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :name, t("fields.name"), t("hints.project_name")) %>
+  <%= form.text_field :name, required: true, class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :slug, t("fields.slug"), t("hints.project_slug")) %>
+  <%= form.text_field :slug, required: true, placeholder: t("placeholders.project_slug"), class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :jira_connection_id, t("fields.jira_connection"), t("hints.project_jira_connection")) %>
+  <%= form.collection_select :jira_connection_id, jira_connections, :id, :name, { include_blank: true }, class: "select w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :confluence_connection_id, t("fields.confluence_connection"), t("hints.project_confluence_connection")) %>
+  <%= form.collection_select :confluence_connection_id, confluence_connections, :id, :name, { include_blank: true }, class: "select w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :jira_keys, t("fields.jira_keys"), t("hints.project_jira_keys")) %>
+  <%= form.text_field :jira_keys, value: Array(project.jira_keys).join(", "), class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :spaces, t("fields.spaces"), t("hints.project_spaces")) %>
+  <%= form.text_field :spaces, value: Array(project.spaces).join(", "), class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :style, t("fields.style"), t("hints.project_style")) %>
+  <%= form.select :style, %w[scrum kanban], {}, class: "select w-full" %>
+</div>

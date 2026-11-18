@@ -1,0 +1,46 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("cache.title", project: @project.name) %></h1>
+      <%= hint(t("hints.cache_index")) %>
+    </div>
+    <p class="page-subtitle"><%= t("cache.intro") %></p>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("common.open"), team_project_path(@team, @project), class: "btn btn-sm" %>
+  </div>
+</div>
+<div class="mt-6 flex flex-col gap-4">
+  <% @strategies.each do |strategy| %>
+    <section class="panel">
+      <div class="panel-body gap-4">
+        <div>
+          <h2 class="mono text-base font-semibold"><%= strategy.namespace %></h2>
+          <p class="text-sm text-base-content/60"><%= t("cache.source") %> <%= strategy.source %></p>
+        </div>
+        <%= form_with model: [@team, @project, strategy], method: :patch, class: "flex flex-wrap items-end gap-4" do |form| %>
+          <div class="flex flex-col gap-1.5">
+            <%= field_label(form, :ttl_seconds, t("fields.ttl_seconds"), t("hints.cache_ttl")) %>
+            <%= form.number_field :ttl_seconds, min: 1, class: "input w-32" %>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <%= field_label(form, :stale_grace_seconds, t("fields.stale_grace_seconds"), t("hints.cache_stale")) %>
+            <%= form.number_field :stale_grace_seconds, min: 0, class: "input w-32" %>
+          </div>
+          <div class="flex items-center gap-1.5 pb-2">
+            <label class="label cursor-pointer justify-start gap-2">
+              <%= form.check_box :enabled, class: "checkbox checkbox-primary" %>
+              <span class="label-text"><%= t("common.enabled") %></span>
+            </label>
+            <%= hint(t("hints.cache_enabled")) %>
+          </div>
+          <%= form.submit t("cache.save"), class: "btn btn-primary btn-sm" %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @strategies.empty? %>
+    <p class="text-base-content/60"><%= t("empty.strategies") %></p>
+  <% end %>
+</div>

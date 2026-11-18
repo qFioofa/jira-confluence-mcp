@@ -1,29 +1,27 @@
 # dependencies
-src/.bundle/
-src/vendor/bundle/
-src/vendor/cache/
-src/*.gem
+lib/.bundle/
+mcp/.bundle/
+rails/.bundle/
+lib/vendor/bundle/
+mcp/vendor/bundle/
+rails/vendor/bundle/
 *.gem
 
 # local data and caches
 tmp/
-src/tmp/
 coverage/
-src/coverage/
 log/
-src/log/
 *.db
 *.db-wal
 *.db-shm
 *.sqlite3
-.trash/
+.local/
 local/
 
 # secrets and environment
 .env
 .env.*
 !.env.example
-src/config/credentials.yml.enc
 *.pem
 *.key
 
@@ -38,8 +36,3 @@ result-*
 .DS_Store
 *.swp
 .ruby-lsp/
-src/.ruby-lsp/
-
-# test output
-src/test/.profile
-*.prof

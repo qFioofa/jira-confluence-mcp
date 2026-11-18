@@ -1,0 +1,32 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("connections.title", team: @team.name) %></h1>
+      <%= hint(t("hints.connections_index")) %>
+    </div>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("connections.add"), new_team_connection_path(@team), class: "btn btn-primary btn-sm" %>
+  </div>
+</div>
+<div class="mt-6 table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.provider") %></th><th><%= t("common.columns.name") %></th><th><%= t("common.columns.base_url") %></th><th><%= t("common.columns.deployment") %></th><th><%= t("common.columns.status") %></th><th></th></tr></thead>
+    <tbody>
+      <% @connections.each do |connection| %>
+        <tr>
+          <td><%= provider_badge(connection.provider) %></td>
+          <td><%= connection.name %></td>
+          <td class="mono"><%= connection.base_url %></td>
+          <td><%= connection.deployment %></td>
+          <td><%= status_badge(connection.status) %></td>
+          <td><%= link_to t("common.edit"), edit_team_connection_path(@team, connection), class: "link link-hover" %></td>
+        </tr>
+      <% end %>
+      <% if @connections.empty? %>
+        <tr><td colspan="6" class="py-8 text-center text-base-content/50"><%= t("empty.connections") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

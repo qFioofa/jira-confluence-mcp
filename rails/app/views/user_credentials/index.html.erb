@@ -1,0 +1,40 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("credentials.title") %></h1>
+      <%= hint(t("hints.credentials_index")) %>
+    </div>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("credentials.add"), new_user_credential_path, class: "btn btn-primary btn-sm" %>
+  </div>
+</div>
+<div class="mt-6 table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.team") %></th><th><%= t("common.columns.connection") %></th><th><%= t("common.columns.auth") %></th><th><%= t("common.columns.email") %></th><th><div class="flex items-center gap-1.5"><%= t("common.columns.secret") %><%= hint(t("hints.credential_secret_note")) %></div></th><th><%= t("common.columns.status") %></th><th><%= t("common.columns.verified") %></th><th></th></tr></thead>
+    <tbody>
+      <% @credentials.each do |credential| %>
+        <tr>
+          <td><%= credential.connection.team.name %></td>
+          <td><%= credential.connection.name %></td>
+          <td><%= credential.auth_type %></td>
+          <td><%= credential.email %></td>
+          <td class="mono"><%= credential.masked_secret || "—" %></td>
+          <td><%= status_badge(credential.status) %></td>
+          <td class="text-base-content/60"><%= credential.last_verified_at || t("common.never") %></td>
+          <td>
+            <div class="flex flex-wrap items-center gap-1">
+              <%= link_to t("common.edit"), edit_user_credential_path(credential), class: "btn btn-xs btn-ghost", title: t("credentials.tooltips.edit") %>
+              <%= button_to t("common.verify"), verify_user_credential_path(credential), method: :post, class: "btn btn-xs btn-ghost", title: t("credentials.tooltips.verify") %>
+              <%= button_to t("common.remove"), user_credential_path(credential), method: :delete, class: "btn btn-xs btn-ghost text-error", title: t("credentials.tooltips.remove") %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+      <% if @credentials.empty? %>
+        <tr><td colspan="8" class="py-8 text-center text-base-content/50"><%= t("empty.credentials") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

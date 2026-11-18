@@ -5,12 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-defaults:
-  run:
-    working-directory: src
-
 jobs:
-  headless:
+  core:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,12 +14,12 @@ jobs:
         with:
           ruby-version: "4.0.6"
           bundler-cache: false
-      - run: bundle config set --local without "ui"
       - run: bundle install --jobs 4 --retry 3
+        working-directory: lib
       - run: bundle exec rake test
-      - run: bundle exec rake assets:verify
+        working-directory: lib
 
-  full:
+  mcp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +28,11 @@ jobs:
           ruby-version: "4.0.6"
           bundler-cache: false
       - run: bundle install --jobs 4 --retry 3
+        working-directory: mcp
       - run: bundle exec rake test
-      - run: bundle exec rake assets:verify
+        working-directory: mcp
 
-  quality:
+  rails:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,22 +40,14 @@ jobs:
         with:
           ruby-version: "4.0.6"
           bundler-cache: false
+      - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libyaml-dev
       - run: bundle install --jobs 4 --retry 3
-      - run: bundle exec rubocop
-      - run: bundle exec bundler-audit check --update
+        working-directory: rails
+      - run: bin/rails test
+        working-directory: rails
 
-  build:
+  docker-mcp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "4.0.6"
-          bundler-cache: false
-      - run: bundle config set --local without "ui"
-      - run: bundle install --jobs 4 --retry 3
-      - run: gem build jira-cld.gemspec
-      - run: docker build -f docker/Dockerfile --build-arg INSTALL_UI=false -t jira-cld:headless .
-        working-directory: .
-      - run: docker build -f docker/Dockerfile --build-arg INSTALL_UI=true -t jira-cld:full .
-        working-directory: .
+      - run: docker build -f mcp/Dockerfile -t jira-mcp:ci .

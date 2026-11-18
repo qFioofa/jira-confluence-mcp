@@ -1,0 +1,20 @@
+<% if connection.errors.any? %>
+  <div class="alert alert-error"><%= connection.errors.full_messages.to_sentence %></div>
+<% end %>
+
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :provider, t("fields.provider"), t("hints.connection_provider")) %>
+  <%= form.select :provider, Connection.providers.keys.map { |key| [key, key] }, {}, required: true, class: "select w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :name, t("fields.name"), t("hints.connection_name")) %>
+  <%= form.text_field :name, required: true, class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :base_url, t("fields.base_url"), t("hints.connection_base_url")) %>
+  <%= form.url_field :base_url, required: true, placeholder: t("placeholders.base_url"), class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :deployment, t("fields.deployment"), t("hints.connection_deployment")) %>
+  <%= form.select :deployment, Connection.deployments.keys.map { |key| [key, key] }, {}, class: "select w-full" %>
+</div>

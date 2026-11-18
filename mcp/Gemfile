@@ -1,0 +1,13 @@
+source "https://rubygems.org"
+
+gemspec
+
+gem "jira_core", path: "../lib"
+gem "puma", ">= 6"
+gem "rack", "~> 3.2"
+
+group :test do
+  gem "minitest", "~> 6.0"
+  gem "rake", "~> 13.2"
+  gem "webmock", "~> 3.34"
+end

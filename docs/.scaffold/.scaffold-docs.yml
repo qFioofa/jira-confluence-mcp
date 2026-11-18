@@ -1,9 +1,0 @@
-last_synced_sha: 1fce09c87dc79516b76b46104aa24b9fcb7637f5
-last_synced_date: 2026-11-18
-audience:
-  primary: "Интегратор MCP-клиента — разработчик, который подключает Jira и Confluence к opencode или другому AI-клиенту."
-  secondary:
-    - "DevOps — разворачивает сервер, управляет секретами, кэшем и диагностикой."
-    - "Контрибьютор — добавляет tools, адаптеры и меняет внутренние подсистемы."
-  inferred: false
-ask_audience: false

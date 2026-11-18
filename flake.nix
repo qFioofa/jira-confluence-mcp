@@ -1,5 +1,5 @@
 {
-  description = "ruby-jira-mcp — local read-only Jira/Confluence MCP server";
+  description = "ruby-jira-mcp — read-only Jira/Confluence MCP server";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -29,10 +29,6 @@
           ];
 
           shellHook = ''
-            export BUNDLE_PATH="$PWD/src/vendor/bundle"
-            export BUNDLE_APP_CONFIG="$PWD/src/.bundle"
-            export BUNDLE_GEMFILE="$PWD/src/Gemfile"
-            export PKG_CONFIG_PATH="${pkgs.sqlite.dev}/lib/pkgconfig:${pkgs.libyaml.dev}/lib/pkgconfig:${pkgs.openssl.dev}/lib/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
             export RUBY_GC_HEAP_GROWTH_FACTOR=1.1
             export RUBYOPT="--disable=did_you_mean,error_highlight,syntax_suggest"
             echo "ruby-jira-mcp dev shell: $(ruby -v)"
@@ -43,16 +39,16 @@
 
       packages = forAllSystems ({ pkgs }: {
         default = pkgs.writeShellApplication {
-          name = "jira-cld";
+          name = "jira-mcp-http";
           runtimeInputs = with pkgs; [ ruby_4_0 bundler sqlite ];
           text = ''
-            root="''${JIRA_CLD_ROOT:-$PWD}"
-            export BUNDLE_GEMFILE="$root/src/Gemfile"
-            export BUNDLE_PATH="''${BUNDLE_PATH:-$root/src/vendor/bundle}"
+            root="''${JIRA_MCP_ROOT:-$PWD}"
+            export BUNDLE_GEMFILE="$root/mcp/Gemfile"
+            export BUNDLE_PATH="''${BUNDLE_PATH:-$root/mcp/vendor/bundle}"
             export RUBY_GC_HEAP_GROWTH_FACTOR="''${RUBY_GC_HEAP_GROWTH_FACTOR:-1.1}"
             export RUBYOPT="''${RUBYOPT:-} --disable=did_you_mean,error_highlight,syntax_suggest"
-            cd "$root"
-            exec bundle exec ruby ${self}/src/bin/jira-cld "$@"
+            cd "$root/mcp"
+            exec bundle exec ruby bin/jira-mcp-http "$@"
           '';
         };
       });
@@ -60,7 +56,7 @@
       apps = forAllSystems ({ pkgs }: {
         default = {
           type = "app";
-          program = "${self.packages.${pkgs.system}.default}/bin/jira-cld";
+          program = "${self.packages.${pkgs.system}.default}/bin/jira-mcp-http";
         };
       });
     };
