@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    rubocop:
+      glob: "*.rb"
+      run: cd src && bundle exec rubocop --force-exclusion $(printf '%s\n' {staged_files} | sed 's|^src/||g')
+    assets:
+      run: cd src && bundle exec rake assets:verify
+pre-push:
+  commands:
+    test:
+      run: cd src && bundle exec rake test

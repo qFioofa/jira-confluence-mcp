@@ -1,0 +1,82 @@
+plugins:
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "bin/*"
+    - "db/migrate/*.rb"
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+Layout/LineLength:
+  Max: 160
+
+Metrics:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/SymbolArray:
+  Enabled: false
+
+Style/WordArray:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - "Gemfile"
+    - "Rakefile"
+
+Lint/MissingSuper:
+  Enabled: false
+
+Performance/CollectionLiteralInLoop:
+  Enabled: false
+
+Naming/MethodParameterName:
+  MinNameLength: 1
+
+Security/Eval:
+  Exclude:
+    - "lib/jira_cld/ui/view.rb"
+
+Lint/NonAtomicFileOperation:
+  Exclude:
+    - "test/**/*"
+
+Style/StringConcatenation:
+  Enabled: false
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+Lint/UnusedMethodArgument:
+  Enabled: false
+
+Lint/DuplicateBranch:
+  Enabled: false
+
+Lint/StructNewOverride:
+  Enabled: false
+
+Lint/ShadowedException:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false

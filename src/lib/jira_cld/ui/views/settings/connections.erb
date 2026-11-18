@@ -1,0 +1,12 @@
+<h1><%= helpers.t("Соединения", "Connections") %></h1>
+<%== helpers.partial("settings/tabs", { section: section }) %>
+<table>
+  <thead><tr><th>endpoint</th><th>value</th></tr></thead>
+  <tbody>
+    <tr><td>Jira</td><td class="mono"><%= config.base_url %></td></tr>
+    <tr><td>Deployment</td><td class="mono"><%= config.deployment %></td></tr>
+    <tr><td>Jira token</td><td class="mono"><%= config.jira_api_token || config.jira_pat ? "********" : "[missing]" %></td></tr>
+    <tr><td>Confluence</td><td class="mono"><%= config.confluence_base_url %></td></tr>
+    <tr><td>Confluence token</td><td class="mono"><%= config.confluence_pat ? "********" : "[missing]" %></td></tr>
+  </tbody>
+</table>

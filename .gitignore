@@ -1,0 +1,45 @@
+# dependencies
+src/.bundle/
+src/vendor/bundle/
+src/vendor/cache/
+src/*.gem
+*.gem
+
+# local data and caches
+tmp/
+src/tmp/
+coverage/
+src/coverage/
+log/
+src/log/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+.trash/
+local/
+
+# secrets and environment
+.env
+.env.*
+!.env.example
+src/config/credentials.yml.enc
+*.pem
+*.key
+
+# nix
+result
+result-*
+.direnv/
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+.ruby-lsp/
+src/.ruby-lsp/
+
+# test output
+src/test/.profile
+*.prof

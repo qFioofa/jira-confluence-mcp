@@ -10,7 +10,9 @@
 ## 1. Назначение и границы
 
 Локальный MCP-сервер для чтения задач Jira и базы знаний Confluence команды.
-Транспорт — stdio. Сервер запускается MCP-хостом (opencode) как дочерний процесс.
+Транспорт — stdio или Streamable HTTP. В stdio сервер запускается MCP-хостом
+(opencode) как дочерний процесс; в HTTP — отдельным процессом/контейнером,
+клиент подключается по loopback URL.
 
 В scope v1:
 
@@ -30,7 +32,7 @@
 
 - Запись в Jira/Confluence.
 - Отправка сообщений в Slack/Teams/email; team-tools только готовят вопрос и ссылки.
-- HTTP-транспорт, nginx, OAuth, multi-user.
+- Публичный HTTP-транспорт (только loopback), nginx, OAuth, multi-user.
 - Postgres, Redis, горизонтальное масштабирование.
 - Вложения как бинарные данные (только метаданные и URL).
 - Полнотекстовый поиск по KB (FTS5) — возможное расширение.
@@ -43,7 +45,7 @@
 | # | Решение | Обоснование |
 |---|---|---|
 | D1 | Rails используется как набор библиотек, без `railties` | нужны AR/AS, но не `Rails::Application` и web-слой |
-| D2 | Транспорт stdio, протокол пиннится на `2025-11-25` | opencode по умолчанию открывает legacy handshake |
+| D2 | Транспорты stdio и Streamable HTTP (loopback), протокол пиннится на `2025-11-25` | opencode по умолчанию открывает legacy handshake; URL избавляет клиент от токена |
 | D3 | SQLite — L2-кэш; durable-зеркало KB — v1.1 | один локальный движок, транзакции, SQL, WAL; зеркало не блокирует базовые tools |
 | D4 | Кэш двухуровневый: `MemoryStore` + `DatabaseStore` | скорость L1, переживание рестарта L2 |
 | D5 | `DatabaseStore` наследует `ActiveSupport::Cache::Store` | TTL, namespace, `race_condition_ttl`, instrumentation бесплатно |
@@ -51,7 +53,7 @@
 | D7 | i18n фиксируется на старте процесса | `tools/list` кэшируется хостом, локаль не должна меняться в рантайме |
 | D8 | Ougai + `oj`, логи только в `$stderr` | stdout занят JSON-RPC |
 | D9 | Zeitwerk без `eager_load` в рантайме | память и предсказуемый старт |
-| D10 | Нет HTTP-транспорта MCP и nginx; UI — отдельный локальный процесс | stdio не имеет сетевого периметра |
+| D10 | HTTP MCP слушает loopback без встроенной аутентификации; nginx нет; UI — отдельный процесс | токен и конфиг остаются в сервере/контейнере, клиент знает только URL |
 | D11 | Read-only токен и allowlist `project/space` на проект | исключить случайные записи и лишние данные |
 | D12 | Ревалидация по `version`/`updated`/ETag | TTL недостаточен для изменений в Confluence/Jira |
 | D13 | Поиск кэшируется только при `CACHE_SEARCH=1` | результаты JQL/CQL быстро стареют |
@@ -359,6 +361,7 @@ mcp-jira-cld/
 | # | Требование | Реализация | Критерий готовности |
 |---|---|---|---|
 | 1 | JSON-RPC 2.0, stdio | `MCP::Server` + `StdioTransport` | ответ на `ping`/`initialize` |
+| 1b | JSON-RPC 2.0, Streamable HTTP | `MCP::Server` + `StreamableHTTPTransport` + Puma | `POST /mcp`, `GET /health` |
 | 2 | Версия протокола | пин `2025-11-25` | `initialize` возвращает capabilities |
 | 3 | `tools/list`, `tools/call` | 16 data/team-tools + 3 catalog-tools | список и вызов работают |
 | 4 | Схемы входа | `input_schema` (JSON Schema 2020-12) | невалидные аргументы отклоняются |
@@ -1113,6 +1116,7 @@ Settings
 | Команда | Назначение |
 |---|---|
 | `bin/jira-cld mcp` | stdio MCP-сервер (production) |
+| `bin/jira-cld mcp-http` | Streamable HTTP MCP-сервер (production, loopback) |
 | `bin/jira-cld ui` | локальный UI (опционально) |
 | `bin/jira-cld setup` | интерактивная настройка → `config.yml` |
 | `bin/jira-cld setup --non-interactive ...` | скриптуемая настройка |

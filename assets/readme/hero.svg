@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="heroTitle heroDesc">
+  <title id="heroTitle">ruby-jira-mcp — локальный read-only MCP-сервер для Jira и Confluence</title>
+  <desc id="heroDesc">Слева название проекта и команда запуска. Справа окно stdio-сессии: initialize, tools/list, 19 инструментов, readOnlyHint true и ограничение project IN (CLD).</desc>
+
+  <rect width="1200" height="420" rx="24" fill="#0B0F14"/>
+  <rect x="0.5" y="0.5" width="1199" height="419" rx="23.5" fill="none" stroke="#1E2B3D"/>
+
+  <g id="brand" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <rect x="64" y="54" width="28" height="4" rx="2" fill="#6EE7B7"/>
+    <text x="64" y="92" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" letter-spacing="1.6" fill="#6EE7B7">LOCAL MCP · JIRA + CONFLUENCE</text>
+    <text x="64" y="158" font-size="68" font-weight="800" letter-spacing="-2" fill="#F2F6FC">ruby-jira-mcp</text>
+    <text x="64" y="210" font-size="28" font-weight="600" fill="#E8EFF8">Read-only доступ к Jira и Confluence</text>
+    <text x="64" y="246" font-size="23" fill="#91A1B6">для вашего AI-агента. Локально, по stdio.</text>
+
+    <g id="metadata" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" fill="#9FB0C6">
+      <circle cx="66" cy="288" r="3.5" fill="#6CB6FF"/>
+      <text x="80" y="295">19 tools</text>
+      <circle cx="178" cy="288" r="3.5" fill="#6EE7B7"/>
+      <text x="192" y="295">Jira Cloud + DC</text>
+      <circle cx="360" cy="288" r="3.5" fill="#6CB6FF"/>
+      <text x="374" y="295">Confluence</text>
+      <circle cx="500" cy="288" r="3.5" fill="#F6C177"/>
+      <text x="514" y="295">MIT</text>
+    </g>
+
+    <g id="run-command">
+      <rect x="64" y="322" width="492" height="48" rx="12" fill="#111B27" stroke="#233145"/>
+      <text x="84" y="353" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" fill="#6EE7B7">$</text>
+      <text x="106" y="353" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" fill="#EAF2FF">make run PROJECT=alpha</text>
+    </g>
+  </g>
+
+  <line x1="680" y1="64" x2="680" y2="356" stroke="#1A2534"/>
+
+  <g id="stdio-session">
+    <rect x="704" y="40" width="432" height="340" rx="18" fill="#0F1722" stroke="#26374D"/>
+    <circle cx="728" cy="64" r="5" fill="#6CB6FF"/>
+    <circle cx="748" cy="64" r="5" fill="#6EE7B7"/>
+    <circle cx="768" cy="64" r="5" fill="#4B5B70"/>
+    <text x="792" y="70" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#91A1B6">stdio</text>
+    <text x="1112" y="70" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#6EE7B7">read-only</text>
+    <line x1="704" y1="84" x2="1136" y2="84" stroke="#223247"/>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
+      <text x="728" y="121" fill="#6EE7B7">$</text>
+      <text x="746" y="121" fill="#EAF2FF">MCP_PROJECT_ID=alpha jira-cld mcp</text>
+      <text x="746" y="153" fill="#6CB6FF">→ initialize</text>
+      <text x="1112" y="153" text-anchor="end" font-size="16" fill="#91A1B6">2025-11-25</text>
+      <text x="746" y="181" fill="#6CB6FF">→ tools/list</text>
+      <text x="1112" y="181" text-anchor="end" font-size="16" fill="#6EE7B7">19 tools</text>
+    </g>
+
+    <line x1="728" y1="202" x2="1112" y2="202" stroke="#223247"/>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" fill="#C9D6E6">
+      <text x="746" y="230">{</text>
+      <text x="746" y="256"><tspan fill="#7FA3C8">"readOnlyHint"</tspan>: <tspan fill="#6EE7B7">true</tspan>,</text>
+      <text x="746" y="282"><tspan fill="#7FA3C8">"destructiveHint"</tspan>: <tspan fill="#6CB6FF">false</tspan></text>
+      <text x="746" y="308">}</text>
+    </g>
+
+    <g id="scope-lock">
+      <rect x="728" y="320" width="384" height="42" rx="10" fill="#0B1320" stroke="#223145"/>
+      <text x="746" y="347" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" fill="#6CB6FF">project IN (CLD)</text>
+      <text x="1094" y="347" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#6EE7B7">GET only</text>
+    </g>
+  </g>
+</svg>

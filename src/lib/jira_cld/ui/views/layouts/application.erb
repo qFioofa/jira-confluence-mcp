@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="<%= context.locale %>" data-theme="<%= context.theme %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ruby-jira-mcp</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/uplot.min.css">
+  <script defer src="/assets/uplot.min.js"></script>
+  <script defer src="/assets/app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">ruby-jira-mcp</div>
+      <nav>
+        <%== helpers.project_selector %>
+        <%== helpers.locale_link %>
+        <%== helpers.theme_link %>
+        <span class="status-ok mono">[ok] live</span>
+      </nav>
+    </header>
+
+    <div class="layout">
+      <aside class="tree">
+        <h2><%= helpers.t("Навигация", "Navigation") %></h2>
+        <ul>
+          <li><%== helpers.nav_link("/projects", helpers.t("Проекты", "Projects"), context.path.start_with?("/projects")) %></li>
+          <% if context.active_project %>
+            <li class="<%= "active" if context.path.start_with?("/projects/#{context.active_project.id}") %>">
+              <%== helpers.nav_link("/projects/#{context.active_project.id}", context.active_project.name, context.path == "/projects/#{context.active_project.id}") %>
+            </li>
+          <% end %>
+          <li><%== helpers.nav_link("/connections", helpers.t("Соединения", "Connections"), context.path == "/connections") %></li>
+          <li><%== helpers.nav_link("/diagnostics", helpers.t("Диагностика", "Diagnostics"), context.path == "/diagnostics") %></li>
+          <li><%== helpers.nav_link("/settings", helpers.t("Настройки", "Settings"), context.path == "/settings") %></li>
+        </ul>
+      </aside>
+      <div></div>
+      <main>
+        <% if context.notice %><div class="notice"><%= context.notice %></div><% end %>
+        <% if context.error %><div class="notice error"><%= context.error %></div><% end %>
+        <%== content %>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

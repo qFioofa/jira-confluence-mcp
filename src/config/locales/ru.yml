@@ -1,0 +1,109 @@
+ru:
+  server:
+    instructions: |
+      Локальный read-only MCP-сервер для Jira и Confluence. Проект: %{project}.
+      Все tool-вызовы только читают данные. JQL/CQL всегда ограничены allowlist проекта;
+      project/space и ORDER BY в пользовательских запросах запрещены. Не выдумывай данные:
+      если источник недоступен, верни partial result и warnings. Не отправляй сообщения и не меняй Jira/Confluence.
+      Ссылки возвращай как ссылки, бинарные вложения не запрашивай.
+  args:
+    project_id: "Идентификатор проекта из project_list"
+    include_query: "Показать сырые query пресетов (для отладки)"
+    scope: "Набор задач: assigned, sprint, review, blocked, recent"
+    jql: "JQL без project и ORDER BY; сервер сам добавит allowlist и сортировку"
+    preset: "Идентификатор пресета из project_describe.query_presets"
+    cursor: "Opaque-курсор из previous next_cursor"
+    key: "Ключ задачи, например CLD-123"
+    kb_query: "Текст поиска по Confluence; пространство и сортировка добавляются сервером"
+  tools:
+    project_list:
+      title: "Проекты"
+      description: "Каталог проектов: id, key, name, capabilities, space, aliases. Только метаданные."
+    project_describe:
+      title: "Описание проекта"
+      description: "Метаданные проекта: типы задач, доски, поля, пресеты, команда. Не меняет привязку проекта."
+    project_resolve:
+      title: "Найти проект"
+      description: "Подбирает кандидатов по id/key/space/alias и возвращает needs_confirmation. Никогда не привязывает проект."
+    my_work:
+      title: "Моя работа"
+      description: "Задачи по preset id: assigned, sprint, review, blocked, recent. Возвращает почему сейчас, следующий шаг и блокеры."
+    search_issues:
+      title: "Поиск задач"
+      description: "Поиск Jira по preset или JQL. Ровно один из jql/preset; project и ORDER BY добавляются сервером."
+    get_issue:
+      title: "Задача"
+      description: "Читает задачу; опционально comments, changelog и links."
+    brief_issue:
+      title: "Brief задачи"
+      description: "Собирает issue, acceptance criteria, решения, открытые вопросы, зависимости, похожие задачи и KB."
+    get_changelog:
+      title: "История изменений"
+      description: "Changelog задачи с курсором и лимитом."
+    list_attachments:
+      title: "Вложения"
+      description: "Метаданные вложений: имя, размер, mime, URL. Без бинарных данных."
+    unblock_issue:
+      title: "Разблокировать"
+      description: "Ищет prior art, экспертов, недавние изменения, runbooks, гипотезы и вопросы. Только чтение."
+    list_sprints:
+      title: "Спринты"
+      description: "Спринты доски по board_id и state."
+    get_sprint_issues:
+      title: "Задачи спринта"
+      description: "Компактные задачи спринта с курсором."
+    kb_search:
+      title: "Поиск в KB"
+      description: "Поиск Confluence по query или CQL с опциональным preset; space и ORDER BY добавляются сервером."
+    kb_get_page:
+      title: "Страница KB"
+      description: "Читает страницу Confluence по id или title+space, отдаёт нормализованный текст без макросов."
+    kb_list_children:
+      title: "Дочерние страницы"
+      description: "Дочерние страницы Confluence с курсором."
+    team_who_knows:
+      title: "Кто знает"
+      description: "Ищет носителей контекста по issue/topic/component/label и возвращает evidence, confidence и gaps."
+    team_prepare_question:
+      title: "Подготовить вопрос"
+      description: "Формирует 3–5 вопросов с reason и evidence. Ничего не отправляет."
+    whoami:
+      title: "Кто я"
+      description: "Пользователь, deployment, space и доступные capabilities."
+    cache_stats:
+      title: "Статистика кэша"
+      description: "Hits/misses/bytes/evictions и агрегаты за последний час."
+  resources:
+    jira_issue:
+      title: "Jira issue"
+      description: "Задача Jira как адресуемый ресурс"
+    kb_page:
+      title: "Confluence page"
+      description: "Страница базы знаний как адресуемый ресурс"
+  prompts:
+    daily:
+      title: "Стендап"
+      description: "Сводка по задачам: сделано, дальше, блокеры"
+      result: "Стендап-сводка"
+    release_notes:
+      title: "Релиз-ноты"
+      description: "Релиз-ноты по preset/JQL"
+      result: "Релиз-ноты"
+    task_brief:
+      title: "Brief задачи"
+      description: "Разбор задачи под understand/plan/verify"
+      result: "Brief задачи"
+    unblock:
+      title: "Разбор ступора"
+      description: "Prior art, эксперты, гипотезы и вопросы"
+      result: "Разбор ступора"
+    handoff:
+      title: "Передача задачи"
+      description: "Пакет передачи задачи без отправки сообщений"
+      result: "Передача задачи"
+    kb_answer:
+      title: "Ответ по KB"
+      description: "Ответ по базе знаний со ссылками"
+      result: "Ответ по базе знаний"
+  cli:
+    ok: "ok"

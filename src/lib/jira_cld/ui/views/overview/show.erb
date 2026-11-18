@@ -1,0 +1,48 @@
+<% if error %>
+  <div class="notice error"><%= error %></div>
+<% end %>
+<h1><%= project.name %></h1>
+<p class="muted mono"><%= project.jira_keys.join(", ") %> · <%= project.spaces.join(", ") %> · <%= project.style %></p>
+<%== helpers.project_tabs(project, "overview") %>
+
+<h2><%= helpers.t("Активность", "Activity") %> · last 1h</h2>
+<div id="activity-chart" class="chart" data-points="<%= helpers.h(JSON.generate(series)) %>" role="img" aria-label="<%= helpers.t("Активность за последний час", "Activity for the last hour") %>"></div>
+<div class="grid4">
+  <div class="metric"><strong><%= summary[:requests] %></strong><span><%= helpers.t("Запросы", "Requests") %></span></div>
+  <div class="metric"><strong><%= summary[:hit_rate] %>%</strong><span>cache hit</span></div>
+  <div class="metric"><strong><%= summary[:errors] %></strong><span><%= helpers.t("Ошибки", "Errors") %></span></div>
+  <div class="metric"><strong><%= summary[:p95_ms] %></strong><span>p95 ms</span></div>
+</div>
+
+<h3><%= helpers.t("Последние вызовы", "Recent calls") %></h3>
+<table>
+  <thead><tr><th>time</th><th>tool</th><th>cache</th><th class="num">ms</th><th>status</th></tr></thead>
+  <tbody>
+    <% recent.each do |row| %>
+      <tr>
+        <td class="mono"><%= row[:at] %></td>
+        <td><%= row[:tool] %></td>
+        <td><%= row[:cache] || "—" %></td>
+        <td class="num"><%= row[:duration_ms] %></td>
+        <td class="<%= helpers.status_class(row[:outcome] == "error" ? "fail" : "ok") %>">[<%= row[:outcome] %>]</td>
+      </tr>
+    <% end %>
+    <% if recent.empty? %>
+      <tr><td colspan="5" class="muted"><%= helpers.t("Нет вызовов за период", "No calls in this window") %></td></tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h3>Cache</h3>
+<table>
+  <thead><tr><th>namespace</th><th class="num">entries</th><th class="num">bytes</th><th>oldest</th></tr></thead>
+  <tbody>
+    <% cache.each do |row| %>
+      <tr><td><%= row[:namespace] %></td><td class="num"><%= row[:entries] %></td><td class="num"><%= row[:bytes] %></td><td class="mono"><%= row[:oldest] %></td></tr>
+    <% end %>
+    <% if cache.empty? %>
+      <tr><td colspan="4" class="muted"><%= helpers.t("Кэш пуст", "Cache is empty") %></td></tr>
+    <% end %>
+  </tbody>
+</table>
+<p class="muted mono"><%= helpers.format_bytes(bytes) %> · <%= helpers.t("база", "db") %> <%= db_path %></p>
