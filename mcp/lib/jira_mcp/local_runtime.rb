@@ -81,6 +81,8 @@ module JiraMcp
         cache_enabled: boolean("CACHE_ENABLED", true),
         stats_enabled: boolean("STATS_ENABLED", false),
         stats_retention_days: integer("STATS_RETENTION_DAYS", 7),
+        git_repos: json_array("GIT_REPOS"),
+        git_author_map: json_object("GIT_AUTHOR_MAP"),
         log_level: presence("LOG_LEVEL") || "info",
         log_format: "json"
       )
@@ -114,10 +116,59 @@ module JiraMcp
             "spaces" => spaces,
             "style" => presence("MCP_PROJECT_STYLE") || "scrum",
             "aliases" => list("MCP_PROJECT_ALIASES"),
-            "queries" => { "jql" => {}, "cql" => {} }
+            "queries" => queries
           }
         ]
       )
+    end
+
+    def queries
+      root = queries_file
+      root = root.fetch("queries", root) if root.key?("queries")
+      {
+        "jql" => normalize_presets(root["jql"], "jql"),
+        "cql" => normalize_presets(root["cql"], "cql")
+      }
+    end
+
+    def queries_file
+      path = presence("MCP_PROJECT_QUERIES_FILE")
+      return {} if path.nil?
+
+      absolute = File.expand_path(path)
+      raise ConfigError, "MCP_PROJECT_QUERIES_FILE not found: #{absolute}" unless File.file?(absolute)
+
+      data = parse_queries_file(absolute, File.read(absolute))
+      raise ConfigError, "MCP_PROJECT_QUERIES_FILE must contain a mapping, got #{data.class}: #{absolute}" unless data.is_a?(Hash)
+
+      data
+    end
+
+    def parse_queries_file(path, raw)
+      require "yaml"
+
+      data = if File.extname(path).downcase == ".json"
+               JSON.parse(raw)
+             else
+               YAML.safe_load(raw, permitted_classes: [], aliases: true)
+             end
+      data || {}
+    rescue JSON::ParserError, Psych::Exception => e
+      raise ConfigError, "MCP_PROJECT_QUERIES_FILE is not valid JSON/YAML (#{path}): #{e.message}"
+    end
+
+    def normalize_presets(value, kind)
+      return {} if value.nil?
+      raise ConfigError, "queries.#{kind} must be a mapping of preset id to preset" unless value.is_a?(Hash)
+
+      value.each_with_object({}) do |(key, preset), memo|
+        raise ConfigError, "queries.#{kind}.#{key} must be a mapping with a query" unless preset.is_a?(Hash)
+
+        item = preset.transform_keys(&:to_s)
+        raise ConfigError, "queries.#{kind}.#{key} is missing query" if item["query"].to_s.strip.empty?
+
+        memo[key.to_s] = item
+      end
     end
 
     def jira_keys
@@ -160,6 +211,30 @@ module JiraMcp
       return default if raw.nil?
 
       %w[1 true yes on].include?(raw.downcase)
+    end
+
+    def json_array(key)
+      raw = presence(key)
+      return [] if raw.nil?
+
+      data = JSON.parse(raw)
+      raise ConfigError, "#{key} must be a JSON array" unless data.is_a?(Array)
+
+      data
+    rescue JSON::ParserError => e
+      raise ConfigError, "#{key} is not valid JSON: #{e.message}"
+    end
+
+    def json_object(key)
+      raw = presence(key)
+      return {} if raw.nil?
+
+      data = JSON.parse(raw)
+      raise ConfigError, "#{key} must be a JSON object" unless data.is_a?(Hash)
+
+      data
+    rescue JSON::ParserError => e
+      raise ConfigError, "#{key} is not valid JSON: #{e.message}"
     end
   end
 end

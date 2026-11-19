@@ -38,7 +38,18 @@ module JiraCore
 
     def people
       @people ||= Repositories::People.new(
-        config: @config, issues: issues, knowledge_base: knowledge_base, logger: @logger
+        config: @config, issues: issues, knowledge_base: knowledge_base, git: git, logger: @logger
+      )
+    end
+
+    def git
+      @git ||= Repositories::Git.new(config: @config, cache: @cache, logger: @logger)
+    end
+
+    def context
+      @context ||= Repositories::Context.new(
+        config: @config, issues: issues, knowledge_base: knowledge_base,
+        people: people, git: git, logger: @logger
       )
     end
 

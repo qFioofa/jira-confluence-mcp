@@ -15,6 +15,22 @@ en:
     cursor: "Opaque cursor from a previous next_cursor"
     key: "Issue key, e.g. CLD-123"
     kb_query: "Confluence search text; space and ordering are added server-side"
+    project_key: "Jira project key, e.g. CLD"
+    board_id: "Agile board id from jira_list_boards"
+    field_query: "Field name or id substring"
+    field_id: "Field id, e.g. customfield_10001"
+    user_query: "Display name, username or email substring"
+    attachment_id: "Attachment id from jira_list_attachments"
+    space: "Confluence space key; defaults to the configured space"
+    page_id: "Confluence page id"
+    depth: "Tree depth in levels (1-5)"
+    kb_attachment_id: "Attachment id from kb_list_attachments"
+    team_sources: "Evidence sources: jira, kb, git (default: all available)"
+    task_sources: "Sources: jira, kb, git, people (default: all available)"
+    since: "Git window, e.g. 180d or 1y"
+    audience: "Clarification audience: analyst, po, tech_lead or team"
+    focus: "Question categories; default all"
+    clarify_include: "Evidence sources: jira, kb, git"
   tools:
     project_list:
       title: "Projects"
@@ -25,9 +41,48 @@ en:
     project_resolve:
       title: "Resolve project"
       description: "Finds candidates by id/key/space/alias and returns needs_confirmation. Never binds a project."
+    list_boards:
+      title: "Boards"
+      description: "Agile boards by project/name/type with a cursor. Use board_id in jira_list_sprints."
+    get_board_issues:
+      title: "Board issues"
+      description: "Issues on a board filtered by JQL; project allowlist and ordering are added server-side."
+    list_fields:
+      title: "Fields"
+      description: "Jira fields with ids, names, types and custom flags. Filter by name/id/type."
+    get_field_options:
+      title: "Field options"
+      description: "Allowed values for a field (custom select options) where the deployment exposes contexts."
+    get_transitions:
+      title: "Transitions"
+      description: "Available workflow transitions and required fields for an issue. Read-only next-step guidance."
+    search_users:
+      title: "Search users"
+      description: "Finds Jira users by display name, username or email; optionally scoped to a project."
+    list_link_types:
+      title: "Link types"
+      description: "Available issue link types with inward/outward names."
+    project_versions:
+      title: "Project versions"
+      description: "Fix versions of a project with release state and dates."
+    project_components:
+      title: "Project components"
+      description: "Components of a project with leads and descriptions."
+    get_issue_links:
+      title: "Issue links"
+      description: "Inbound and outward links of an issue: blockers, duplicates, relates."
+    get_worklog:
+      title: "Worklog"
+      description: "Worklog entries of an issue with author, time spent and comment."
+    git_experts:
+      title: "Git experts"
+      description: "Ranks likely experts from local git history by issue key, repo, path or component. Signal, not a confirmed owner."
+    get_attachment:
+      title: "Attachment"
+      description: "Returns attachment content: images as MCP image content, text inline, other binaries as metadata."
     my_work:
       title: "My work"
-      description: "Issues by preset id: assigned, sprint, review, blocked, recent. Includes why_now, next_action and blockers."
+      description: "Scopes: assigned, sprint, review, blocked, recent. Uses project JQL presets when configured, otherwise built-in queries. Includes why_now, next_action and blockers."
     search_issues:
       title: "Search issues"
       description: "Jira search by preset or JQL. Exactly one of jql/preset; project and ORDER BY are added server-side."
@@ -37,6 +92,12 @@ en:
     brief_issue:
       title: "Brief issue"
       description: "Collects issue, acceptance criteria, decisions, open questions, dependencies, similar issues and KB."
+    jira_task_context:
+      title: "Task context"
+      description: "Assembles Jira, Confluence, git and people evidence into a task analysis scaffold with timeline, gaps and citations."
+    jira_clarify_issue:
+      title: "Clarify issue"
+      description: "Builds prioritized clarification questions with evidence links, readiness and suggested recipients."
     get_changelog:
       title: "Changelog"
       description: "Issue changelog with cursor and limit."
@@ -61,6 +122,27 @@ en:
     kb_list_children:
       title: "List children"
       description: "Confluence child pages with a cursor."
+    kb_get_space:
+      title: "Get space"
+      description: "Confluence space metadata: id, key, name, type and URL."
+    kb_get_page_history:
+      title: "Page history"
+      description: "Page versions with author, timestamp, message and minor flag."
+    kb_get_page_comments:
+      title: "Page comments"
+      description: "Comments on a page with author, timestamp and normalized text."
+    kb_list_labels:
+      title: "Page labels"
+      description: "Labels attached to a page."
+    kb_list_attachments:
+      title: "Page attachments"
+      description: "Attachment metadata of a page: filename, media type, size, download URL."
+    kb_get_attachment:
+      title: "Get attachment"
+      description: "Returns attachment content: images as MCP image content, text inline, other binaries as metadata."
+    kb_space_tree:
+      title: "Space tree"
+      description: "Page hierarchy of a space up to a depth with a node limit."
     team_who_knows:
       title: "Who knows"
       description: "Finds context holders by issue/topic/component/label and returns evidence, confidence and gaps."
@@ -93,6 +175,14 @@ en:
       title: "Task brief"
       description: "Issue brief for understand/plan/verify"
       result: "Task brief"
+    understand_task:
+      title: "Understand task"
+      description: "Explain the task from Jira, Confluence and git"
+      result: "Task analysis"
+    clarify_analyst:
+      title: "Clarify with analyst"
+      description: "Questions with links for the analyst"
+      result: "Clarification request"
     unblock:
       title: "Unblock"
       description: "Prior art, experts, hypotheses and questions"

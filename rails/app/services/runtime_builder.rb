@@ -119,7 +119,9 @@ class RuntimeBuilder
       cache_search: project.settings.fetch("cache_search", false),
       cache_enabled: project.settings.fetch("cache_enabled", true),
       stats_enabled: project.settings.fetch("stats_enabled", true),
-      stats_retention_days: project.settings.fetch("stats_retention_days", 7)
+      stats_retention_days: project.settings.fetch("stats_retention_days", 7),
+      git_repos: project.settings.fetch("git_repos", []),
+      git_author_map: project.settings.fetch("git_author_map", {})
     )
   end
 

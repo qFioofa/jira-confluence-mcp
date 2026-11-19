@@ -26,8 +26,10 @@ module JiraCore
         raise Atlassian::QueryError.new("either jql or preset is required", query_code: :query_invalid) if jql.nil? && preset.nil?
 
         if preset
-          query, order_by, default_limit = Query::JQL.preset(config.require_project!, preset)
+          project = config.require_project!
+          query, order_by, default_limit = Query::JQL.preset(project, preset)
           limit = default_limit if limit.nil?
+          preset_source = Query::JQL.preset_source(project, preset)
         else
           query = jql.to_s
           order_by = Query::JQL::DEFAULT_ORDER
@@ -51,14 +53,22 @@ module JiraCore
                else
                  fetcher.call
                end
-        data.merge("limit" => limit)
+        result = data.merge("limit" => limit)
+        if preset
+          result["preset"] = preset.to_s
+          result["preset_source"] = preset_source
+        end
+        result
       end
 
       def my_work(scope: "assigned", limit: 20, project_id: nil)
         raise ConfigError, "project #{project_id} is not bound to this server" if project_id && project_id.to_s != config.project_id
 
         preset_id = SCOPE_TO_PRESET[scope.to_s]
-        raise Atlassian::QueryError.new("unknown my_work scope #{scope.inspect}", query_code: :query_invalid) unless preset_id
+        unless preset_id
+          raise Atlassian::QueryError.new("unknown my_work scope #{scope.inspect}", query_code: :query_invalid,
+                                                                               hint: "use one of: #{SCOPE_TO_PRESET.keys.join(", ")}")
+        end
 
         data = search_issues(preset: preset_id, limit: limit)
         issues = data["issues"].map { |issue| issue.merge(work_hints(issue, scope)) }
@@ -206,6 +216,29 @@ module JiraCore
 
       def attachments(key)
         jira.attachments(key)
+      end
+
+      def issue_links(key)
+        raw = raw_issue(key)
+        links = Serialize::Issue.links(raw.dig("fields", "issuelinks"))
+        { "key" => raw["key"] || key.to_s.upcase, "links" => links, "total" => links.length }
+      end
+
+      def boards(**options)
+        jira.boards(**options)
+      end
+
+      def board_issues(board_id, jql: nil, limit: 50, cursor: nil)
+        wrapped = Query::JQL.wrap(jql.to_s, allowlist: config.jira_keys,
+                                               max_chars: config.query_max_chars)
+        raw = jira.board_issues(board_id, jql: wrapped, limit: limit, cursor: cursor)
+        {
+          "issues" => Array(raw[:issues]).map { |issue| Serialize::Issue.compact(issue, base_url: config.base_url) },
+          "next_cursor" => raw[:next_cursor],
+          "total" => raw[:total],
+          "jql" => wrapped,
+          "deployment" => config.deployment
+        }
       end
 
       def sprints(board_id, state: nil)

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "base64"
 require "json"
 
 module JiraMcp
@@ -17,6 +18,34 @@ module JiraMcp
           [{ type: "text", text: json }],
           structured_content: payload
         )
+      end
+
+      def attachment(data)
+        mime = data[:mime_type].to_s
+        meta = {
+          "id" => data[:id],
+          "filename" => data[:filename],
+          "mime_type" => mime,
+          "size" => data[:size],
+          "inline" => data[:inline]
+        }.compact
+        blocks = []
+        if mime.start_with?("image/") && data[:inline]
+          blocks << { type: "image", data: Base64.strict_encode64(data[:bytes]), mimeType: mime }
+        elsif text_like?(mime) && data[:inline]
+          limit = JiraMcp.runtime&.config&.output_char_limit || 24_000
+          text = data[:bytes].to_s
+          text = "#{text[0, limit]}\n[truncated]" if text.length > limit
+          meta["text"] = text
+        else
+          meta["note"] = "binary content is not inlined"
+        end
+        blocks << { type: "text", text: JSON.pretty_generate(meta) }
+        MCP::Tool::Response.new(blocks, structured_content: meta)
+      end
+
+      def text_like?(mime)
+        mime.start_with?("text/") || %w[application/json application/xml application/yaml].include?(mime)
       end
 
       def error(error, source: nil, limit: nil)
@@ -62,7 +91,8 @@ module JiraMcp
             "error" => {
               "code" => error.query_code.to_s,
               "message" => error.message,
-              "hint" => error.hint
+              "hint" => error.hint,
+              "details" => error.details
             }.compact
           }
         when JiraCore::Atlassian::Error

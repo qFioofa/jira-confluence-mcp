@@ -110,6 +110,28 @@ module JiraCore
         end
       end
 
+      def worklogs(items)
+        Array(items).map do |worklog|
+          comment = worklog["comment"]
+          text = case comment
+                 when Hash
+                   Render::ADF.to_text(comment)
+                 when String
+                   Render::HTML.to_text(comment)
+                 end
+          {
+            "id" => worklog["id"],
+            "author" => Person.compact(worklog["author"]),
+            "started" => worklog["started"],
+            "time_spent" => worklog["timeSpent"],
+            "time_spent_seconds" => worklog["timeSpentSeconds"],
+            "created" => worklog["created"],
+            "updated" => worklog["updated"],
+            "comment" => text
+          }.compact
+        end
+      end
+
       def changelog(histories)
         Array(histories).flat_map do |history|
           Array(history["items"]).map do |item|

@@ -4,6 +4,38 @@ module JiraCore
   module Query
     module JQL
       DEFAULT_ORDER = "updated DESC"
+      DEFAULT_PRESETS = {
+        "my_work" => {
+          "label" => "My work",
+          "query" => "assignee = currentUser() AND resolution = Unresolved",
+          "order_by" => DEFAULT_ORDER,
+          "default_limit" => 20
+        },
+        "sprint" => {
+          "label" => "My sprint",
+          "query" => "assignee = currentUser() AND sprint in openSprints() AND resolution = Unresolved",
+          "order_by" => DEFAULT_ORDER,
+          "default_limit" => 20
+        },
+        "review" => {
+          "label" => "Waiting for review",
+          "query" => "assignee = currentUser() AND status in (Review, \"In Review\", \"Код-ревью\")",
+          "order_by" => DEFAULT_ORDER,
+          "default_limit" => 20
+        },
+        "blocked" => {
+          "label" => "Blocked",
+          "query" => "assignee = currentUser() AND (status = Blocked OR flagged = Impediment)",
+          "order_by" => DEFAULT_ORDER,
+          "default_limit" => 20
+        },
+        "recent" => {
+          "label" => "Recently updated",
+          "query" => "assignee = currentUser() AND updated >= -7d",
+          "order_by" => DEFAULT_ORDER,
+          "default_limit" => 20
+        }
+      }.freeze
       PROJECT_KEY = /\A[A-Z][A-Z0-9_]*\z/
       FORBIDDEN = [
         [/\bproject\b/i, "project"],
@@ -41,10 +73,39 @@ module JiraCore
       end
 
       def preset(project, id, kind: :jql)
-        preset = project&.jql_preset(id)
-        raise Atlassian::QueryError.new("unknown JQL preset #{id.inspect}", query_code: :query_preset_unknown) unless preset
+        key = id.to_s
+        preset = kind == :jql ? project&.jql_preset(key) : project&.cql_preset(key)
+        preset ||= DEFAULT_PRESETS[key] if kind == :jql && DEFAULT_PRESETS.key?(key)
+        unless preset
+          raise Atlassian::QueryError.new("unknown JQL preset #{id.inspect}", query_code: :query_preset_unknown,
+                                                                             hint: preset_hint(project, kind),
+                                                                             details: { available_presets: available_presets(project, kind) })
+        end
 
         [preset["query"].to_s, preset["order_by"] || DEFAULT_ORDER, (preset["default_limit"] || 20).to_i]
+      end
+
+      def preset_source(project, id, kind: :jql)
+        key = id.to_s
+        configured = kind == :jql ? project&.jql_preset(key) : project&.cql_preset(key)
+        return "project" if configured
+        return "builtin" if kind == :jql && DEFAULT_PRESETS.key?(key)
+
+        nil
+      end
+
+      def available_presets(project, kind = :jql)
+        configured = kind == :jql ? project&.jql_presets : project&.cql_presets
+        keys = (configured || {}).keys.map(&:to_s)
+        keys += DEFAULT_PRESETS.keys if kind == :jql
+        keys.uniq
+      end
+
+      def preset_hint(project, kind = :jql)
+        ids = available_presets(project, kind)
+        return "no #{kind.to_s.upcase} presets are configured; pass jql instead" if ids.empty?
+
+        "use one of: #{ids.join(", ")}"
       end
 
       def text_query(text, field: "text")

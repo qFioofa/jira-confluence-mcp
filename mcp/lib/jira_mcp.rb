@@ -40,9 +40,16 @@ loader.inflector.inflect(
   "jql" => "JQL",
   "kb" => "KB",
   "kb_answer" => "KBAnswer",
+  "kb_get_attachment" => "KBGetAttachment",
   "kb_get_page" => "KBGetPage",
+  "kb_get_page_comments" => "KBGetPageComments",
+  "kb_get_page_history" => "KBGetPageHistory",
+  "kb_get_space" => "KBGetSpace",
+  "kb_list_attachments" => "KBListAttachments",
   "kb_list_children" => "KBListChildren",
+  "kb_list_labels" => "KBListLabels",
   "kb_page_template" => "KBPageTemplate",
-  "kb_search" => "KBSearch"
+  "kb_search" => "KBSearch",
+  "kb_space_tree" => "KBSpaceTree"
 )
 loader.setup

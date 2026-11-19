@@ -45,6 +45,60 @@ module JiraCore
         value.is_a?(Hash) ? Render::HTML.to_text(value["value"] || value["text"]) : value.to_s
       end
 
+      def history(results)
+        Array(results).map do |version|
+          {
+            "number" => version["number"],
+            "when" => version["when"],
+            "author" => Person.compact(version["by"]),
+            "message" => version["message"],
+            "minor_edit" => version["minorEdit"]
+          }.compact
+        end
+      end
+
+      def comments(results)
+        Array(results).map do |comment|
+          body = comment.dig("body", "view", "value") || comment.dig("body", "storage", "value")
+          {
+            "id" => comment["id"]&.to_s,
+            "title" => comment["title"],
+            "author" => Person.compact(comment.dig("version", "by") || comment["author"]),
+            "created" => comment.dig("version", "when") || comment["created"],
+            "body" => Render::HTML.to_text(body),
+            "location" => comment.dig("extensions", "location")
+          }.compact
+        end
+      end
+
+      def labels(results)
+        Array(results).map do |label|
+          {
+            "id" => label["id"]&.to_s,
+            "name" => label["name"],
+            "prefix" => label["prefix"]
+          }.compact
+        end
+      end
+
+      def attachments(results, base_url: nil)
+        Array(results).map do |item|
+          links = item["_links"] || {}
+          download = links["download"]
+          base = links["base"] || base_url
+          download = "#{base}#{download}" if download && base && !download.match?(%r{\Ahttps?://})
+          {
+            "id" => item["id"]&.to_s,
+            "filename" => item["title"] || item["filename"],
+            "media_type" => item.dig("extensions", "mediaType") || item["mediaType"],
+            "size" => item.dig("extensions", "fileSize") || item["fileSize"],
+            "download_url" => download,
+            "author" => Person.compact(item.dig("version", "by")),
+            "updated" => item.dig("version", "when")
+          }.compact
+        end
+      end
+
       def children(page)
         results = page["results"] || page["_embedded"]&.values&.first || []
         Array(results).map do |child|

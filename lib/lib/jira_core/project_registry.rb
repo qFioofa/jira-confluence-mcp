@@ -84,14 +84,27 @@ module JiraCore
       end
 
       def describe(include_query: false)
+        presets = preset_descriptions(include_query: include_query)
         to_h.merge(
-          query_presets: preset_descriptions(include_query: include_query),
+          query_presets: presets,
+          warnings: describe_warnings,
           members: [],
           roles: [],
           component_leads: [],
           tools: [],
           boards: []
         )
+      end
+
+      def describe_warnings
+        warnings = []
+        if jql_presets.empty?
+          warnings << "no JQL presets configured for this project; jira_my_work and jira_search_issues use built-in queries (assigned/recent work out of the box)"
+        end
+        if cql_presets.empty?
+          warnings << "no CQL presets configured; knowledge base search runs without a preset"
+        end
+        warnings
       end
 
       def preset_descriptions(include_query: false)

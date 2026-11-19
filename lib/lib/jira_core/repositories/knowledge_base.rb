@@ -90,6 +90,84 @@ module JiraCore
         end
       end
 
+      def space_info(space: nil)
+        require_enabled!
+        key = space || @config.space
+        raise Atlassian::CapabilityError.new("space is not configured", domain: :confluence,
+                                                                         hint: "set CLD_SPACE or pass space") if key.to_s.empty?
+
+        { "space" => @confluence.space(key) }
+      end
+
+      def page_history(page_id, limit: 50, cursor: nil)
+        require_enabled!
+        logical = { page_id: page_id.to_s, limit: limit, cursor: cursor }
+        fetcher = -> { @confluence.page_history(page_id, limit: limit, cursor: cursor) }
+        raw = cursor.nil? ? @cache.fetch(ns: "page_history", logical: logical, &fetcher) : fetcher.call
+        {
+          "page_id" => page_id.to_s,
+          "versions" => raw[:versions],
+          "next_cursor" => raw[:next_cursor],
+          "total" => raw[:total]
+        }
+      end
+
+      def page_comments(page_id, limit: 50, cursor: nil)
+        require_enabled!
+        logical = { page_id: page_id.to_s, limit: limit, cursor: cursor }
+        fetcher = -> { @confluence.page_comments(page_id, limit: limit, cursor: cursor) }
+        raw = cursor.nil? ? @cache.fetch(ns: "page_comments", logical: logical, &fetcher) : fetcher.call
+        {
+          "page_id" => page_id.to_s,
+          "comments" => raw[:comments],
+          "next_cursor" => raw[:next_cursor],
+          "total" => raw[:total]
+        }
+      end
+
+      def labels(page_id)
+        require_enabled!
+        raw = @cache.fetch(ns: "page_labels", logical: { page_id: page_id.to_s }) do
+          @confluence.labels(page_id)
+        end
+        { "page_id" => page_id.to_s, "labels" => raw[:labels], "total" => raw[:total] }
+      end
+
+      def attachments(page_id, limit: 50, cursor: nil)
+        require_enabled!
+        logical = { page_id: page_id.to_s, limit: limit, cursor: cursor }
+        fetcher = -> { @confluence.attachments(page_id, limit: limit, cursor: cursor) }
+        raw = cursor.nil? ? @cache.fetch(ns: "page_attachments", logical: logical, &fetcher) : fetcher.call
+        {
+          "page_id" => page_id.to_s,
+          "attachments" => raw[:attachments],
+          "next_cursor" => raw[:next_cursor],
+          "total" => raw[:total]
+        }
+      end
+
+      def attachment(page_id, attachment_id: nil, filename: nil)
+        require_enabled!
+        @confluence.attachment(page_id, attachment_id: attachment_id, filename: filename)
+      end
+
+      def space_tree(space: nil, depth: 2, limit: 100)
+        require_enabled!
+        space_key = space || @config.space
+        raise Atlassian::CapabilityError.new("space is not configured", domain: :confluence,
+                                                                         hint: "set CLD_SPACE or pass space") if space_key.to_s.empty?
+
+        depth = depth.to_i.clamp(1, 5)
+        limit = limit.to_i.clamp(1, 500)
+        pages = fetch_space_pages(space_key, limit)
+        {
+          "space" => space_key,
+          "depth" => depth,
+          "nodes" => build_tree(pages, depth, limit),
+          "total" => pages.length
+        }
+      end
+
       def space_health
         require_enabled!
         spaces = @config.spaces.map do |space|
@@ -102,6 +180,49 @@ module JiraCore
       end
 
       private
+
+      def fetch_space_pages(space_key, limit)
+        pages = []
+        cursor = nil
+        loop do
+          remaining = limit - pages.length
+          break if remaining <= 0
+
+          raw = @confluence.space_pages(space_key, limit: [remaining, 50].min, cursor: cursor)
+          pages.concat(raw[:pages])
+          cursor = raw[:next_cursor]
+          break if cursor.nil?
+        end
+        pages.first(limit)
+      end
+
+      def build_tree(pages, max_depth, limit)
+        nodes = {}
+        pages.each do |page|
+          ancestors = Array(page["ancestors"])
+          nodes[page["id"].to_s] = {
+            "id" => page["id"].to_s,
+            "title" => page["title"],
+            "url" => Serialize::Page.url(page, base_url: @config.confluence_web_base_url),
+            "parent_id" => ancestors.last&.dig("id")&.to_s,
+            "depth" => ancestors.length,
+            "children" => []
+          }
+        end
+
+        included = nodes.values.select { |node| node["depth"] < max_depth }.first(limit)
+        included_ids = included.to_h { |node| [node["id"], true] }
+        roots = []
+        included.each do |node|
+          parent = nodes[node["parent_id"]]
+          if parent && included_ids[parent["id"]]
+            parent["children"] << node
+          else
+            roots << node
+          end
+        end
+        roots
+      end
 
       def fetch_page(id)
         meta = @cache.fetch(ns: "page_meta", logical: { id: id.to_s }) do

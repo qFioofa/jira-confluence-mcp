@@ -3,21 +3,35 @@
 module JiraCore
   module Repositories
     class People
-      def initialize(config:, issues:, knowledge_base: nil, logger: nil)
+      KNOWN_SOURCES = %w[jira kb git].freeze
+
+      def initialize(config:, issues:, knowledge_base: nil, git: nil, logger: nil)
         @config = config
         @issues = issues
         @knowledge_base = knowledge_base
+        @git = git
         @logger = logger
       end
 
-      def who_knows(topic: nil, issue_key: nil, component: nil, label: nil, window: 180, limit: 5, depth: "standard")
-        criteria = { topic: topic, issue_key: issue_key, component: component, label: label }.compact
-        raise Atlassian::QueryError.new("one of topic, issue_key, component or label is required", query_code: :query_invalid) if criteria.empty?
+      def who_knows(topic: nil, issue_key: nil, component: nil, label: nil, window: 180, limit: 5,
+                    depth: "standard", sources: nil, repo: nil, path: nil)
+        sources = Array(sources).map(&:to_s).reject(&:empty?)
+        sources = KNOWN_SOURCES if sources.empty?
+        sources = sources.select { |source| KNOWN_SOURCES.include?(source) }
+
+        criteria = { topic: topic, issue_key: issue_key, component: component, label: label,
+                     repo: repo, path: path }.compact
+        if criteria.empty?
+          raise Atlassian::QueryError.new("one of topic, issue_key, component, label, repo or path is required",
+                                          query_code: :query_invalid)
+        end
 
         evidence = Hash.new { |hash, key| hash[key] = { person: nil, score: 0, items: [] } }
         warnings = []
+        used = []
 
-        if issue_key
+        if sources.include?("jira") && issue_key
+          used << "jira"
           begin
             raw = @issues.raw_issue(issue_key)
             issue = Serialize::Issue.compact(raw, base_url: @config.base_url)
@@ -35,29 +49,33 @@ module JiraCore
           end
         end
 
-        begin
-          jql = build_jql(topic: topic, component: component, label: label, window: window)
-          found = @issues.search_issues(jql: jql, limit: 25)["issues"]
-          found.each do |issue|
-            collect_issue_people(evidence, issue, weight: 1)
-            next unless depth.to_s == "deep"
+        if sources.include?("jira") && (topic || component || label)
+          used << "jira"
+          begin
+            jql = build_jql(topic: topic, component: component, label: label, window: window)
+            found = @issues.search_issues(jql: jql, limit: 25)["issues"]
+            found.each do |issue|
+              collect_issue_people(evidence, issue, weight: 1)
+              next unless depth.to_s == "deep"
 
-            begin
-              @issues.comments(issue["key"], limit: 20).each do |comment|
-                add_person(evidence, comment["author"], weight: 2, item: evidence_item(
-                  source: "jira_comment", id: "#{issue["key"]}:#{comment["id"]}", title: issue["summary"],
-                  role: "commenter", date: comment["created"], url: issue["url"]
-                ))
+              begin
+                @issues.comments(issue["key"], limit: 20).each do |comment|
+                  add_person(evidence, comment["author"], weight: 2, item: evidence_item(
+                    source: "jira_comment", id: "#{issue["key"]}:#{comment["id"]}", title: issue["summary"],
+                    role: "commenter", date: comment["created"], url: issue["url"]
+                  ))
+                end
+              rescue Atlassian::Error => e
+                warnings << warning(e, "comments:#{issue["key"]}")
               end
-            rescue Atlassian::Error => e
-              warnings << warning(e, "comments:#{issue["key"]}")
             end
+          rescue Atlassian::Error => e
+            warnings << warning(e, "jira_search")
           end
-        rescue Atlassian::Error => e
-          warnings << warning(e, "jira_search")
         end
 
-        if @knowledge_base&.enabled? && (topic || component)
+        if sources.include?("kb") && @knowledge_base&.enabled? && (topic || component)
+          used << "kb"
           begin
             pages = @knowledge_base.search(query: topic || component, limit: 10)["pages"]
             pages.each do |page|
@@ -71,14 +89,47 @@ module JiraCore
           end
         end
 
+        git_result = nil
+        if sources.include?("git") && @git&.enabled? && (issue_key || topic || component || repo || path)
+          used << "git"
+          begin
+            git_result = @git.experts(issue_key: issue_key, repo: repo, path: path, component: component,
+                                      since: "#{window.to_i}d", limit: limit)
+            Array(git_result["experts"]).each do |expert|
+              person = git_person(expert)
+              next if person.nil?
+
+              items = Array(expert["evidence"]).first(5).map do |item|
+                evidence_item(source: "git_commit", id: item["sha"], title: item["title"], role: "author",
+                              date: item["date"], url: item["url"])
+              end
+              if items.empty?
+                items = [evidence_item(source: "git_expert", id: person["display_name"], title: "git history",
+                                       role: "author", date: expert["last_active"], url: nil)]
+              end
+              items.each { |item| add_person(evidence, person, weight: 2, item: item) }
+            end
+          rescue StandardError => e
+            warnings << warning(e, "git")
+          end
+        end
+
         people = rank(evidence, limit)
         result = {
           "criteria" => criteria,
+          "sources" => used.uniq,
           "window_days" => window,
           "people" => people,
-          "gaps" => gaps(people, topic: topic),
-          "suggested_questions" => questions_for(topic || issue_key || component || label, people)
+          "gaps" => gaps(people, topic: topic || repo || path),
+          "suggested_questions" => questions_for(topic || issue_key || component || label || repo || path, people)
         }
+        if git_result
+          result["git"] = {
+            "bus_factor" => git_result["bus_factor"],
+            "repositories" => git_result["repositories"]
+          }.compact
+          result["gaps"].concat(Array(git_result["gaps"]).map { |gap| gap["reason"] })
+        end
         result["warnings"] = warnings unless warnings.empty?
         result
       end
@@ -113,6 +164,19 @@ module JiraCore
 
       private
 
+      def git_person(expert)
+        jira = expert["jira_person"] || {}
+        name = jira["display_name"] || expert.dig("git_identity", "name")
+        return nil if name.to_s.empty?
+
+        {
+          "account_id" => jira["account_id"],
+          "display_name" => name,
+          "git_confidence" => expert["confidence"],
+          "git_roles" => expert["role_hint"]
+        }.compact
+      end
+
       def build_jql(topic:, component:, label:, window:)
         clauses = []
         clauses << Query::JQL.text_query(topic) if topic
@@ -136,7 +200,7 @@ module JiraCore
         return if key.empty?
 
         entry = evidence[key]
-        entry[:person] ||= person
+        entry[:person] = entry[:person].is_a?(Hash) ? entry[:person].merge(person) : person
         entry[:score] += weight
         entry[:items] << item unless entry[:items].any? { |existing| existing["id"] == item["id"] }
       end

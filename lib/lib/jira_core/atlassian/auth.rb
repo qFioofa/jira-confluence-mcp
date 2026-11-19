@@ -19,7 +19,8 @@ module JiraCore
           end
 
           if config.cloud?
-            basic(config.confluence_email, config.confluence_api_token,
+            basic(config.confluence_email || config.jira_email,
+                  config.confluence_api_token || config.jira_api_token,
                   "JIRA_EMAIL and JIRA_API_TOKEN/CONFLUENCE_API_TOKEN")
           else
             bearer(config.confluence_pat || config.jira_pat, "CONFLUENCE_PAT")

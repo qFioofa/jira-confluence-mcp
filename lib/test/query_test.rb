@@ -47,6 +47,46 @@ class QueryTest < CoreTest
       JiraCore::Query::JQL.preset(@project, "nope")
     end
     assert_equal :query_preset_unknown, error.query_code
+    assert_includes error.hint, "my_work"
+    assert_includes error.details[:available_presets], "my_work"
+    assert_includes error.details[:available_presets], "sprint"
+  end
+
+  def test_jql_falls_back_to_builtin_presets
+    project = empty_registry.find("alpha")
+    query, order, limit = JiraCore::Query::JQL.preset(project, "my_work")
+
+    assert_includes query, "assignee = currentUser()"
+    assert_equal "updated DESC", order
+    assert_equal 20, limit
+    assert_equal "builtin", JiraCore::Query::JQL.preset_source(project, "my_work")
+  end
+
+  def test_project_preset_overrides_builtin
+    query, = JiraCore::Query::JQL.preset(@project, "my_work")
+
+    assert_includes query, "statusCategory != Done"
+    assert_equal "project", JiraCore::Query::JQL.preset_source(@project, "my_work")
+  end
+
+  def test_project_describe_warns_when_presets_missing
+    description = empty_registry.find("alpha").describe
+
+    assert description[:warnings].any? { |warning| warning.include?("no JQL presets") }
+  end
+
+  def empty_registry
+    JiraCore::ProjectRegistry.new(
+      [
+        {
+          "id" => "alpha",
+          "name" => "Alpha",
+          "jira_keys" => ["CLD"],
+          "spaces" => ["CLD"],
+          "queries" => { "jql" => {}, "cql" => {} }
+        }
+      ]
+    )
   end
 
   def test_cql_wraps_and_escapes

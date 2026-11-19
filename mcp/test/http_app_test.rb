@@ -35,8 +35,10 @@ class HTTPAppTest < McpTest
 
     assert_equal 200, response.status
     tools = JSON.parse(response.body).dig("result", "tools")
-    assert_equal 19, tools.length
+    assert_equal 41, tools.length
     assert_includes tools.map { |tool| tool["name"] }, "jira_search_issues"
+    assert_includes tools.map { |tool| tool["name"] }, "jira_list_boards"
+    assert_includes tools.map { |tool| tool["name"] }, "kb_space_tree"
   end
 
   def test_rejects_unknown_path

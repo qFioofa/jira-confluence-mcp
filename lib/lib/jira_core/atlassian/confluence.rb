@@ -104,6 +104,132 @@ module JiraCore
         }
       end
 
+      def page_history(id, limit: 50, cursor: nil)
+        ensure_page_scope!(id)
+        limit = limit.to_i.clamp(1, 50)
+        data = Cursor.decode(cursor) || {}
+        params = { limit: limit, start: data[:s] || 0 }
+        response = client.get("#{V1}/content/#{escape_path(id)}/version", query: params, headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        payload = response.json
+        results = Array(payload["results"])
+        start = payload["start"].to_i
+        total = payload["total"]
+        next_start = start + results.length
+        more = total ? next_start < total.to_i : results.length >= limit
+        {
+          page_id: id.to_s,
+          versions: Serialize::Page.history(results),
+          next_cursor: more ? Cursor.encode(k: "kb_history", s: next_start) : nil,
+          total: total
+        }
+      end
+
+      def page_comments(id, limit: 50, cursor: nil)
+        ensure_page_scope!(id)
+        limit = limit.to_i.clamp(1, 50)
+        data = Cursor.decode(cursor) || {}
+        params = { limit: limit, start: data[:s] || 0, expand: "body.view,version" }
+        response = client.get("#{V1}/content/#{escape_path(id)}/child/comment", query: params, headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        payload = response.json
+        results = Array(payload["results"])
+        start = payload["start"].to_i
+        total = payload["total"]
+        next_start = start + results.length
+        more = total ? next_start < total.to_i : results.length >= limit
+        {
+          page_id: id.to_s,
+          comments: Serialize::Page.comments(results),
+          next_cursor: more ? Cursor.encode(k: "kb_comments", s: next_start) : nil,
+          total: total
+        }
+      end
+
+      def labels(id)
+        ensure_page_scope!(id)
+        response = client.get("#{V1}/content/#{escape_path(id)}/label", headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        results = Array(response.json["results"])
+        { page_id: id.to_s, labels: Serialize::Page.labels(results), total: results.length }
+      end
+
+      def attachments(id, limit: 50, cursor: nil)
+        ensure_page_scope!(id)
+        limit = limit.to_i.clamp(1, 50)
+        data = Cursor.decode(cursor) || {}
+        params = { limit: limit, start: data[:s] || 0, expand: "version" }
+        response = client.get("#{V1}/content/#{escape_path(id)}/child/attachment", query: params, headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        payload = response.json
+        results = Array(payload["results"])
+        start = payload["start"].to_i
+        total = payload["total"]
+        next_start = start + results.length
+        more = total ? next_start < total.to_i : results.length >= limit
+        {
+          page_id: id.to_s,
+          attachments: Serialize::Page.attachments(results, base_url: config.confluence_web_base_url),
+          next_cursor: more ? Cursor.encode(k: "kb_attachments", s: next_start) : nil,
+          total: total
+        }
+      end
+
+      def attachment(id, attachment_id: nil, filename: nil)
+        ensure_page_scope!(id)
+        response = client.get("#{V1}/content/#{escape_path(id)}/child/attachment",
+                              query: { limit: 100, expand: "version" }, headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        results = Array(response.json["results"])
+        item = if !attachment_id.to_s.empty?
+                 results.find { |entry| entry["id"].to_s == attachment_id.to_s }
+               elsif !filename.to_s.empty?
+                 results.find { |entry| (entry["title"] || entry["filename"]).to_s == filename.to_s }
+               else
+                 results.first
+               end
+        raise NotFoundError.new("attachment not found on page #{id}", domain: :confluence, status: 404) unless item
+
+        path = "#{V1}/content/#{escape_path(id)}/child/attachment/#{escape_path(item["id"])}/download"
+        binary = client.get(path, headers: auth_headers.merge("Accept" => "*/*"))
+        Errors.raise_for!(binary, domain: :confluence, deployment: config.deployment)
+        bytes = binary.body.to_s
+        {
+          id: item["id"],
+          filename: item["title"] || item["filename"],
+          mime_type: item.dig("extensions", "mediaType") || item["mediaType"],
+          size: item.dig("extensions", "fileSize") || item["fileSize"],
+          bytes: bytes,
+          content_type: binary.headers["content-type"],
+          inline: bytes.bytesize <= MAX_INLINE_BYTES
+        }
+      end
+
+      def space_pages(space_key, limit: 100, cursor: nil)
+        limit = limit.to_i.clamp(1, 100)
+        data = Cursor.decode(cursor) || {}
+        params = {
+          spaceKey: space_key,
+          type: "page",
+          expand: "ancestors,version,space",
+          limit: limit,
+          start: data[:s] || 0
+        }
+        response = client.get("#{V1}/content", query: params, headers: auth_headers)
+        Errors.raise_for!(response, domain: :confluence, deployment: config.deployment)
+        payload = response.json
+        results = Array(payload["results"]).map { |page| enforce_space!(page) }
+        start = payload["start"].to_i
+        total = payload["total"]
+        next_start = start + results.length
+        more = total ? next_start < total.to_i : results.length >= limit
+        {
+          pages: results,
+          next_cursor: more ? Cursor.encode(k: "kb_space_pages", s: next_start) : nil,
+          total: total
+        }
+      end
+
       def search(cql:, limit: 10, cursor: nil)
         limit = limit.to_i.clamp(1, 50)
         data = Cursor.decode(cursor) || {}
@@ -134,6 +260,10 @@ module JiraCore
           space_resolve: true,
           pages: true,
           children: config.cloud? ? "v2:cursor" : "v1:start",
+          history: true,
+          comments: true,
+          labels: true,
+          attachments: "metadata+download",
           search: "v1:cql",
           body_format: "view"
         }
@@ -141,8 +271,14 @@ module JiraCore
 
       private
 
+      MAX_INLINE_BYTES = 5 * 1024 * 1024
+
       def auth_headers
         Auth.headers(config, service: :confluence)
+      end
+
+      def ensure_page_scope!(id)
+        page(id, include_body: false)
       end
 
       def enforce_space!(page)

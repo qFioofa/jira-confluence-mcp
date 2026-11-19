@@ -15,6 +15,22 @@ ru:
     cursor: "Opaque-курсор из previous next_cursor"
     key: "Ключ задачи, например CLD-123"
     kb_query: "Текст поиска по Confluence; пространство и сортировка добавляются сервером"
+    project_key: "Ключ проекта Jira, например CLD"
+    board_id: "Id Agile-доски из jira_list_boards"
+    field_query: "Подстрока имени или id поля"
+    field_id: "Id поля, например customfield_10001"
+    user_query: "Подстрока имени, username или email"
+    attachment_id: "Id вложения из jira_list_attachments"
+    space: "Ключ пространства Confluence; по умолчанию настроенное"
+    page_id: "Id страницы Confluence"
+    depth: "Глубина дерева в уровнях (1-5)"
+    kb_attachment_id: "Id вложения из kb_list_attachments"
+    team_sources: "Источники evidence: jira, kb, git (по умолчанию все доступные)"
+    task_sources: "Источники: jira, kb, git, people (по умолчанию все доступные)"
+    since: "Окно git, например 180d или 1y"
+    audience: "Кому адресованы вопросы: analyst, po, tech_lead или team"
+    focus: "Категории вопросов; по умолчанию все"
+    clarify_include: "Источники evidence: jira, kb, git"
   tools:
     project_list:
       title: "Проекты"
@@ -25,9 +41,48 @@ ru:
     project_resolve:
       title: "Найти проект"
       description: "Подбирает кандидатов по id/key/space/alias и возвращает needs_confirmation. Никогда не привязывает проект."
+    list_boards:
+      title: "Доски"
+      description: "Agile-доски по проекту/имени/типу с курсором. board_id используйте в jira_list_sprints."
+    get_board_issues:
+      title: "Задачи доски"
+      description: "Задачи доски с фильтром JQL; allowlist проекта и сортировка добавляются сервером."
+    list_fields:
+      title: "Поля"
+      description: "Поля Jira с id, именами, типами и признаком custom. Фильтр по имени/id/типу."
+    get_field_options:
+      title: "Значения поля"
+      description: "Допустимые значения поля (варианты custom-полей), если deployment отдаёт contexts."
+    get_transitions:
+      title: "Переходы"
+      description: "Доступные workflow-переходы и обязательные поля задачи. Read-only подсказка следующего шага."
+    search_users:
+      title: "Поиск людей"
+      description: "Ищет пользователей Jira по имени, username или email; опционально в рамках проекта."
+    list_link_types:
+      title: "Типы связей"
+      description: "Доступные типы связей задач с inward/outward именами."
+    project_versions:
+      title: "Версии проекта"
+      description: "Fix-версии проекта с состоянием релиза и датами."
+    project_components:
+      title: "Компоненты проекта"
+      description: "Компоненты проекта с лидами и описаниями."
+    get_issue_links:
+      title: "Связи задачи"
+      description: "Входящие и исходящие связи задачи: блокеры, дубликаты, relates."
+    get_worklog:
+      title: "Worklog"
+      description: "Записи worklog задачи с автором, затраченным временем и комментарием."
+    git_experts:
+      title: "Эксперты по git"
+      description: "Ранжирует вероятных экспертов по локальной истории git: ключ задачи, репозиторий, путь или компонент. Это сигнал, а не подтверждённый владелец."
+    get_attachment:
+      title: "Вложение"
+      description: "Отдаёт содержимое вложения: картинки как MCP image content, текст инлайн, прочие бинарники как метаданные."
     my_work:
       title: "Моя работа"
-      description: "Задачи по preset id: assigned, sprint, review, blocked, recent. Возвращает почему сейчас, следующий шаг и блокеры."
+      description: "Scopes: assigned, sprint, review, blocked, recent. Использует JQL-пресеты проекта, если они заданы, иначе встроенные запросы. Возвращает почему сейчас, следующий шаг и блокеры."
     search_issues:
       title: "Поиск задач"
       description: "Поиск Jira по preset или JQL. Ровно один из jql/preset; project и ORDER BY добавляются сервером."
@@ -37,6 +92,12 @@ ru:
     brief_issue:
       title: "Brief задачи"
       description: "Собирает issue, acceptance criteria, решения, открытые вопросы, зависимости, похожие задачи и KB."
+    jira_task_context:
+      title: "Контекст задачи"
+      description: "Собирает Jira, Confluence, git и людей в каркас анализа: timeline, gaps и citations."
+    jira_clarify_issue:
+      title: "Уточнить задачу"
+      description: "Формирует приоритетные вопросы с ссылками на evidence, readiness и рекомендациями адресатов."
     get_changelog:
       title: "История изменений"
       description: "Changelog задачи с курсором и лимитом."
@@ -61,6 +122,27 @@ ru:
     kb_list_children:
       title: "Дочерние страницы"
       description: "Дочерние страницы Confluence с курсором."
+    kb_get_space:
+      title: "Пространство"
+      description: "Метаданные пространства Confluence: id, ключ, имя, тип и URL."
+    kb_get_page_history:
+      title: "История страницы"
+      description: "Версии страницы с автором, временем, сообщением и признаком minor."
+    kb_get_page_comments:
+      title: "Комментарии страницы"
+      description: "Комментарии страницы с автором, временем и нормализованным текстом."
+    kb_list_labels:
+      title: "Метки страницы"
+      description: "Метки, привязанные к странице."
+    kb_list_attachments:
+      title: "Вложения страницы"
+      description: "Метаданные вложений страницы: имя, media type, размер, download URL."
+    kb_get_attachment:
+      title: "Вложение страницы"
+      description: "Отдаёт содержимое вложения: картинки как MCP image content, текст инлайн, прочие бинарники как метаданные."
+    kb_space_tree:
+      title: "Дерево пространства"
+      description: "Иерархия страниц пространства до заданной глубины с лимитом узлов."
     team_who_knows:
       title: "Кто знает"
       description: "Ищет носителей контекста по issue/topic/component/label и возвращает evidence, confidence и gaps."
@@ -93,6 +175,14 @@ ru:
       title: "Brief задачи"
       description: "Разбор задачи под understand/plan/verify"
       result: "Brief задачи"
+    understand_task:
+      title: "Понять задачу"
+      description: "Разбор задачи по Jira, Confluence и git"
+      result: "Анализ задачи"
+    clarify_analyst:
+      title: "Уточнения у аналитика"
+      description: "Вопросы со ссылками для аналитика"
+      result: "Запрос на уточнение"
     unblock:
       title: "Разбор ступора"
       description: "Prior art, эксперты, гипотезы и вопросы"

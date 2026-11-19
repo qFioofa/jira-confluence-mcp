@@ -74,6 +74,28 @@ class IssuesRepositoryTest < CoreTest
     refute_nil result["issues"].first["next_action"]
   end
 
+  def test_my_work_uses_builtin_queries_without_presets
+    registry = JiraCore::ProjectRegistry.new(
+      [
+        {
+          "id" => "alpha",
+          "name" => "Alpha",
+          "jira_keys" => ["CLD"],
+          "spaces" => ["CLD"],
+          "queries" => { "jql" => {}, "cql" => {} }
+        }
+      ]
+    )
+    runtime = JiraCore::Runtime.build(config: config(registry: registry), cache: JiraCore::Cache::MemoryStore.new)
+    stub_search
+
+    result = runtime.issues.my_work(scope: "assigned", limit: 2)
+
+    assert_equal "my_work", result["preset"]
+    assert_equal "builtin", result["preset_source"]
+    assert_equal 1, result["issues"].length
+  end
+
   def test_get_issue_comments_and_changelog
     stub_request(:get, "https://example.atlassian.net/rest/api/3/issue/CLD-1")
       .with(query: hash_including("expand" => "renderedFields"))

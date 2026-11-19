@@ -90,7 +90,7 @@ curl -s http://127.0.0.1:8765/health
 | Каталог  | Что это                                                         |
 | -------- | --------------------------------------------------------------- |
 | `lib/`   | `jira_core`: HTTP-клиенты, Atlassian-адаптеры, репозитории, кэш |
-| `mcp/`   | `jira_mcp`: 19 tools, prompts, resources + standalone endpoint  |
+| `mcp/`   | `jira_mcp`: 41 tools, prompts, resources + standalone endpoint  |
 | `rails/` | Web UI, пользователи, проекты, выпуск токенов MCP               |
 | `docs/`  | дизайн standalone endpoint                                      |
 
@@ -305,6 +305,7 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 | `MCP_PROJECT_NAME`                                           | `MCP_PROJECT_ID`              | отображаемое имя                                           |
 | `MCP_PROJECT_STYLE`                                          | `scrum`                       | `scrum` или `kanban`                                       |
 | `MCP_PROJECT_ALIASES`                                        | пусто                         | алиасы для `project_resolve`                               |
+| `MCP_PROJECT_QUERIES_FILE`                                   | пусто                         | JSON/YAML с JQL/CQL-пресетами; перекрывает встроенные      |
 | `JIRA_KEYS`                                                  | `MCP_PROJECT_ID` в upper case | allowlist Jira-ключей; в JQL всегда `project IN (...)`     |
 | `CLD_SPACE`                                                  | пусто                         | allowlist пространств Confluence; пусто отключает KB-tools |
 | `CONFLUENCE_BASE_URL`                                        | `<Jira>/wiki`                 | URL Confluence                                             |
@@ -313,6 +314,37 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 Важно: `JIRA_KEYS` должен содержать реальные ключи Jira. Если `MCP_PROJECT_ID`
 это slug (`alpha`), а ключ проекта `CLD`, без `JIRA_KEYS=CLD` поиск будет
 ограничен несуществующим `ALPHA`.
+
+## Пресеты запросов
+
+`jira_my_work` и `jira_search_issues(preset:)` работают без настройки: для
+`my_work`, `sprint`, `review`, `blocked` и `recent` есть встроенные JQL.
+Встроенные запросы можно перекрыть файлом:
+
+```yaml
+# config/queries.yml
+queries:
+  jql:
+    review:
+      label: На ревью
+      query: assignee = currentUser() AND status = "Код-ревью"
+      order_by: updated DESC
+      default_limit: 20
+  cql:
+    runbooks:
+      label: Runbooks
+      query: label = runbook AND type = page
+      default_limit: 10
+```
+
+```bash
+MCP_PROJECT_QUERIES_FILE=config/queries.yml
+```
+
+Файл читается при старте; неизвестные ключи игнорируются, пресет без `query`
+или битый JSON/YAML приводит к `config_error`. `project_describe` возвращает
+`query_presets` и `warnings`, если пресеты не заданы. Для Docker-запуска файл
+нужно смонтировать в контейнер.
 
 # Поведение и вывод
 
@@ -331,6 +363,13 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 | `CACHE_SEARCH`            | `0`            | кэшировать поисковые ответы                 |
 | `CACHE_STALE_GRACE`       | `600`          | сек. отдачи устаревших данных при ошибке    |
 | `STATS_ENABLED`           | `0` standalone | сбор статистики вызовов                     |
+| `GIT_REPOS`               | пусто          | JSON-массив локальных репозиториев для `git_experts` и контекста |
+| `GIT_AUTHOR_MAP`          | пусто          | JSON-маппинг git author → Jira account      |
+
+Git-доступ только локальный и read-only: `git log/show/grep` по allowlist
+репозиториев из `GIT_REPOS` (или `Project.settings["git_repos"]` в Rails).
+`git_experts` ранжирует вероятных экспертов по коммитам и свежести; это
+сигнал, а не подтверждённый владелец.
 | `STATS_RETENTION_DAYS`    | `7`            | срок хранения статистики                    |
 | `LOG_LEVEL`               | `info`         | `debug`/`info`/`warn`/`error`; лог в stderr |
 
@@ -357,11 +396,23 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 # Tools
 
 `project_list`, `project_describe`, `project_resolve`,
+
+`jira_list_boards`, `jira_get_board_issues`, `jira_list_fields`,
+`jira_get_field_options`, `jira_get_transitions`, `jira_search_users`,
+`jira_list_link_types`, `jira_project_versions`, `jira_project_components`,
+`jira_get_issue_links`, `jira_get_worklog`, `jira_get_attachment`, `git_experts`,
+
 `jira_my_work`, `jira_search_issues`, `jira_get_issue`, `jira_brief_issue`,
+`jira_task_context`, `jira_clarify_issue`,
 `jira_get_changelog`, `jira_list_attachments`, `jira_unblock_issue`,
 `jira_list_sprints`, `jira_get_sprint_issues`,
-`kb_search`, `kb_get_page`, `kb_list_children`,
+
+`kb_search`, `kb_get_page`, `kb_list_children`, `kb_get_space`,
+`kb_get_page_history`, `kb_get_page_comments`, `kb_list_labels`,
+`kb_list_attachments`, `kb_get_attachment`, `kb_space_tree`,
+
 `team_who_knows`, `team_prepare_question`,
+
 `atlassian_whoami`, `atlassian_cache_stats`.
 
 # Частые проблемы
@@ -374,6 +425,7 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 | `406 Not Acceptable` на `/mcp`           | клиент не прислал `Accept: application/json, text/event-stream`         |
 | `403` от транспорта                      | `Host` не разрешён: добавьте его в `MCP_HTTP_ALLOWED_HOSTS`             |
 | Пустые результаты JQL                    | `JIRA_KEYS` не совпадает с реальными ключами проекта                    |
+| `query_preset_unknown`                   | нет такого preset; список — в `error.details.available_presets`          |
 | Rails `user_credential_missing`          | добавьте credential на `/user_credentials/new`                          |
 | Rails `invalid or revoked MCP token`     | токен отозван или скопирован неверно; создайте новый в `/mcp_endpoints` |
 

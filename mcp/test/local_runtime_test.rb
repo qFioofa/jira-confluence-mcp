@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "test_helper"
+require "tempfile"
+require "yaml"
 
 class LocalRuntimeTest < Minitest::Test
   BASE_ENV = {
@@ -56,5 +58,51 @@ class LocalRuntimeTest < Minitest::Test
     end
 
     assert_match(/OUTPUT_CHAR_LIMIT/, error.message)
+  end
+
+  def test_loads_query_presets_from_file
+    file = Tempfile.new(%w[presets .yml])
+    file.write(
+      {
+        "queries" => {
+          "jql" => {
+            "review" => { "label" => "Review", "query" => "status = \"Код-ревью\"", "default_limit" => 5 }
+          }
+        }
+      }.to_yaml
+    )
+    file.close
+
+    runtime = JiraMcp::LocalRuntime.from_env(BASE_ENV.merge("MCP_PROJECT_QUERIES_FILE" => file.path))
+    project = runtime.config.project
+
+    assert_equal 5, project.jql_preset("review")["default_limit"]
+    assert_equal "project", JiraCore::Query::JQL.preset_source(project, "review")
+    assert_equal "builtin", JiraCore::Query::JQL.preset_source(project, "my_work")
+  ensure
+    runtime&.close
+    file&.unlink
+  end
+
+  def test_rejects_missing_queries_file
+    error = assert_raises(JiraMcp::LocalRuntime::ConfigError) do
+      JiraMcp::LocalRuntime.from_env(BASE_ENV.merge("MCP_PROJECT_QUERIES_FILE" => "/tmp/does-not-exist.yml"))
+    end
+
+    assert_match(/MCP_PROJECT_QUERIES_FILE/, error.message)
+  end
+
+  def test_rejects_broken_queries_file
+    file = Tempfile.new(%w[presets .yml])
+    file.write("queries:\n  jql:\n    broken: [\n")
+    file.close
+
+    error = assert_raises(JiraMcp::LocalRuntime::ConfigError) do
+      JiraMcp::LocalRuntime.from_env(BASE_ENV.merge("MCP_PROJECT_QUERIES_FILE" => file.path))
+    end
+
+    assert_match(/MCP_PROJECT_QUERIES_FILE/, error.message)
+  ensure
+    file&.unlink
   end
 end

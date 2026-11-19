@@ -11,20 +11,55 @@ module JiraCore
         @logger = logger
       end
 
-      def boards
-        response = @client.get("#{PREFIX}/board", headers: headers)
+      def boards(project_key: nil, name: nil, type: nil, limit: 50, cursor: nil)
+        limit = limit.to_i.clamp(1, 50)
+        cursor_data = Cursor.decode(cursor) || {}
+        start_at = [cursor_data[:s].to_i, 0].max
+        params = { startAt: start_at, maxResults: limit }
+        params[:projectKeyOrId] = project_key.to_s unless project_key.to_s.empty?
+        params[:name] = name.to_s unless name.to_s.empty?
+        params[:type] = type.to_s unless type.to_s.empty?
+
+        response = @client.get("#{PREFIX}/board", query: params, headers: headers)
         Errors.raise_for!(response, domain: :jira, deployment: @config.deployment)
         data = response.json
+        items = Array(data["values"]).map do |board|
+          {
+            id: board["id"],
+            name: board["name"],
+            type: board["type"],
+            location: board.dig("location", "projectKey"),
+            project: board.dig("location", "projectName")
+          }.compact
+        end
+        total = data["total"]
+        next_start = start_at + items.length
+        more = total ? next_start < total.to_i : items.length >= limit
         {
-          boards: Array(data["values"]).map do |board|
-            {
-              id: board["id"],
-              name: board["name"],
-              type: board["type"],
-              location: board.dig("location", "projectKey")
-            }.compact
-          end,
-          total: data["total"]
+          boards: items,
+          total: total,
+          next_cursor: more ? Cursor.encode(k: "jira_boards", s: next_start) : nil
+        }
+      end
+
+      def board_issues(board_id, jql: nil, limit: 50, cursor: nil)
+        limit = limit.to_i.clamp(1, 50)
+        cursor_data = Cursor.decode(cursor) || {}
+        start_at = [cursor_data[:s].to_i, 0].max
+        params = { startAt: start_at, maxResults: limit }
+        params[:jql] = jql.to_s unless jql.to_s.empty?
+
+        response = @client.get("#{PREFIX}/board/#{board_id}/issue", query: params, headers: headers)
+        Errors.raise_for!(response, domain: :jira, deployment: @config.deployment)
+        data = response.json
+        issues = Array(data["issues"])
+        total = data["total"]
+        next_start = start_at + issues.length
+        more = total ? next_start < total.to_i : issues.length >= limit
+        {
+          issues: issues,
+          total: total,
+          next_cursor: more ? Cursor.encode(k: "jira_board_issues", s: next_start) : nil
         }
       end
 

@@ -40,6 +40,8 @@ module JiraCore
       cache_write_batch: 64,
       stats_enabled: true,
       stats_retention_days: 7,
+      git_repos: [],
+      git_author_map: {},
       log_level: "info",
       log_format: "json"
     )
@@ -79,6 +81,8 @@ module JiraCore
       @cache_write_batch = cache_write_batch
       @stats_enabled = stats_enabled
       @stats_retention_days = stats_retention_days
+      @git_repos = normalize_git_repos(git_repos)
+      @git_author_map = normalize_author_map(git_author_map)
       @log_level = log_level
       @log_format = log_format
     end
@@ -153,6 +157,18 @@ module JiraCore
       !!@stats_enabled
     end
 
+    def git_repos
+      @git_repos
+    end
+
+    def git_author_map
+      @git_author_map
+    end
+
+    def git_enabled?
+      !@git_repos.empty?
+    end
+
     def project
       registry&.find(project_id)
     end
@@ -173,6 +189,44 @@ module JiraCore
     def normalize_deployment(value)
       normalized = value.to_s.downcase
       %w[dc server data_center].include?(normalized) ? "dc" : "cloud"
+    end
+
+    def normalize_git_repos(value)
+      Array(value).filter_map do |repo|
+        next unless repo.is_a?(Hash)
+
+        id = repo["id"] || repo[:id]
+        path = repo["path"] || repo[:path] || repo["local_path"] || repo[:local_path]
+        next if id.to_s.empty? || path.to_s.empty?
+
+        {
+          "id" => id.to_s,
+          "path" => File.expand_path(path.to_s),
+          "url" => (repo["url"] || repo[:url]).to_s.delete_suffix("/"),
+          "provider" => (repo["provider"] || repo[:provider] || "generic").to_s,
+          "default_branch" => (repo["default_branch"] || repo[:default_branch] || "main").to_s,
+          "jira_keys" => Array(repo["jira_keys"] || repo[:jira_keys]).map { |key| key.to_s.upcase },
+          "components" => stringify_hash(repo["components"] || repo[:components]),
+          "authors" => normalize_author_map(repo["authors"] || repo[:authors])
+        }
+      end
+    end
+
+    def normalize_author_map(value)
+      return {} unless value.is_a?(Hash)
+
+      value.each_with_object({}) do |(key, item), memo|
+        normalized = key.to_s.strip.downcase
+        next if normalized.empty?
+
+        memo[normalized] = item.is_a?(Hash) ? stringify_hash(item) : item.to_s
+      end
+    end
+
+    def stringify_hash(value)
+      return {} unless value.is_a?(Hash)
+
+      value.each_with_object({}) { |(key, item), memo| memo[key.to_s] = item }
     end
   end
 end

@@ -30,8 +30,10 @@ class McpTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     tools = JSON.parse(response.body).dig("result", "tools")
-    assert_equal 19, tools.length
+    assert_equal 41, tools.length
     assert_includes tools.map { |tool| tool["name"] }, "jira_search_issues"
+    assert_includes tools.map { |tool| tool["name"] }, "jira_get_transitions"
+    assert_includes tools.map { |tool| tool["name"] }, "kb_get_page_history"
   end
 
   test "project_list returns the bound project" do

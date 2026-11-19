@@ -77,6 +77,97 @@ class ConfluenceContractTest < CoreTest
     assert_equal "CLD", confluence.space("CLD")[:key]
   end
 
+  def stub_page_scope(id = "123")
+    stub_request(:get, "https://example.atlassian.net/wiki/api/v2/pages/#{id}")
+      .to_return(status: 200, body: JSON.generate(page_payload(id: id)),
+                 headers: { "Content-Type" => "application/json" })
+  end
+
+  def test_page_history
+    stub_page_scope
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/version")
+      .with(query: hash_including("limit" => "2", "start" => "0"))
+      .to_return(status: 200, body: JSON.generate({
+                                                    "results" => [{ "number" => 3, "when" => "2026-11-17T10:00:00.000Z",
+                                                                    "by" => { "displayName" => "Alice" },
+                                                                    "message" => "fix typo" }],
+                                                    "start" => 0, "total" => 1
+                                                  }), headers: { "Content-Type" => "application/json" })
+
+    result = @confluence.page_history("123", limit: 2)
+    assert_equal 3, result[:versions].first["number"]
+    assert_equal "Alice", result[:versions].first["author"]["display_name"]
+    assert_nil result[:next_cursor]
+  end
+
+  def test_page_comments
+    stub_page_scope
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/child/comment")
+      .with(query: hash_including("expand" => "body.view,version"))
+      .to_return(status: 200, body: JSON.generate({
+                                                    "results" => [{
+                                                      "id" => "c1", "title" => "Re: Retry",
+                                                      "version" => { "when" => "2026-11-17T11:00:00.000Z",
+                                                                     "by" => { "displayName" => "Bob" } },
+                                                      "body" => { "view" => { "value" => "<p>Agreed</p>" } }
+                                                    }], "start" => 0, "total" => 1
+                                                  }), headers: { "Content-Type" => "application/json" })
+
+    result = @confluence.page_comments("123")
+    assert_equal "Agreed", result[:comments].first["body"]
+    assert_equal "Bob", result[:comments].first["author"]["display_name"]
+  end
+
+  def test_labels_and_attachments
+    stub_page_scope
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/label")
+      .to_return(status: 200, body: JSON.generate({ "results" => [{ "id" => "1", "name" => "runbook", "prefix" => "global" }] }),
+                 headers: { "Content-Type" => "application/json" })
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/child/attachment")
+      .with(query: hash_including("expand" => "version"))
+      .to_return(status: 200, body: JSON.generate({
+                                                    "results" => [{
+                                                      "id" => "a1", "title" => "diagram.png",
+                                                      "extensions" => { "mediaType" => "image/png", "fileSize" => 10 },
+                                                      "_links" => { "download" => "/download/attachments/123/diagram.png" },
+                                                      "version" => { "when" => "2026-11-17T10:00:00.000Z",
+                                                                     "by" => { "displayName" => "Alice" } }
+                                                    }], "start" => 0, "total" => 1
+                                                  }), headers: { "Content-Type" => "application/json" })
+
+    labels = @confluence.labels("123")
+    assert_equal "runbook", labels[:labels].first["name"]
+
+    attachments = @confluence.attachments("123")
+    assert_equal "diagram.png", attachments[:attachments].first["filename"]
+    assert_includes attachments[:attachments].first["download_url"], "/download/attachments/123/diagram.png"
+  end
+
+  def test_attachment_download
+    stub_page_scope
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/child/attachment")
+      .with(query: hash_including("limit" => "100"))
+      .to_return(status: 200, body: JSON.generate({
+                                                    "results" => [{ "id" => "a1", "title" => "diagram.png",
+                                                                    "extensions" => { "mediaType" => "image/png", "fileSize" => 4 } }]
+                                                  }), headers: { "Content-Type" => "application/json" })
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content/123/child/attachment/a1/download")
+      .to_return(status: 200, body: "PNG!".b, headers: { "Content-Type" => "image/png" })
+
+    result = @confluence.attachment("123", filename: "diagram.png")
+    assert_equal "image/png", result[:mime_type]
+    assert_equal "PNG!".b, result[:bytes]
+  end
+
+  def test_space_pages_rejects_out_of_scope_page
+    stub_request(:get, "https://example.atlassian.net/wiki/rest/api/content")
+      .with(query: hash_including("spaceKey" => "CLD", "type" => "page"))
+      .to_return(status: 200, body: JSON.generate({ "results" => [page_payload(space: "EVIL")], "total" => 1 }),
+                 headers: { "Content-Type" => "application/json" })
+
+    assert_raises(JiraCore::Atlassian::Error) { @confluence.space_pages("CLD") }
+  end
+
   def test_space_resolve_is_cached
     stub_request(:get, "https://example.atlassian.net/wiki/rest/api/space/CLD")
       .to_return(status: 200, body: JSON.generate({ "id" => "1", "key" => "CLD", "name" => "Cloud" }),
