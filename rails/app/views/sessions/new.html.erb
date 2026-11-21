@@ -1,0 +1,23 @@
+<div class="mx-auto mt-10 max-w-md">
+  <div class="mb-6 text-center">
+    <span class="brand-mark mx-auto">J</span>
+    <h1 class="page-title mt-4"><%= t("sessions.title") %></h1>
+    <p class="page-subtitle">Подключите Jira и Confluence к вашему MCP-клиенту.</p>
+  </div>
+
+  <%= form_with url: session_path, method: :post, class: "panel form-panel mt-6" do |form| %>
+  <div class="panel-body gap-4">
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :email, t("fields.email"), t("hints.session_email")) %>
+      <%= form.email_field :email, required: true, autofocus: true, class: "input w-full" %>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :password, t("fields.password"), t("hints.session_password")) %>
+      <%= form.password_field :password, required: true, class: "input w-full" %>
+    </div>
+    <div class="card-actions mt-2 justify-end">
+      <%= form.submit t("sessions.submit"), class: "btn btn-primary" %>
+    </div>
+  </div>
+  <% end %>
+</div>

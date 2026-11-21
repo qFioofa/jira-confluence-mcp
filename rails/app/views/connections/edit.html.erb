@@ -1,0 +1,13 @@
+<div class="page-header">
+  <div><h1 class="page-title"><%= t("connections.edit_title", team: @team.name) %></h1></div>
+  <div class="page-actions"><%= link_to t("common.back"), team_connections_path(@team), class: "btn btn-sm" %></div>
+</div>
+
+<%= form_with model: [@team, @connection], class: "panel form-panel mt-6" do |form| %>
+  <div class="panel-body gap-4">
+    <%= render "form", form: form, connection: @connection %>
+    <div class="card-actions justify-end">
+      <%= form.submit t("connections.save"), class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

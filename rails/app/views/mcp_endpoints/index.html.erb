@@ -1,0 +1,52 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("mcp.title") %></h1>
+      <%= hint(t("hints.mcp_index")) %>
+    </div>
+    <p class="page-subtitle"><%= t("mcp.intro") %> <code class="mono">/mcp/&lt;token&gt;</code></p>
+  </div>
+</div>
+
+<div class="mt-6 table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.project") %></th><th><%= t("common.columns.prefix") %></th><th><%= t("common.columns.last_used") %></th><th></th></tr></thead>
+    <tbody>
+      <% @endpoints.each do |endpoint| %>
+        <tr>
+          <td><%= endpoint.name %></td>
+          <td><%= endpoint.project.name %></td>
+          <td class="mono"><%= endpoint.token_prefix %>…</td>
+          <td class="text-base-content/60"><%= endpoint.last_used_at || t("common.never") %></td>
+          <td>
+            <% if endpoint.revoked? %>
+              <%= status_badge("revoked", label: t("common.revoked")) %>
+            <% else %>
+              <%= button_to t("common.revoke"), mcp_endpoint_path(endpoint), method: :delete, class: "btn btn-xs btn-ghost text-error", title: t("mcp.tooltips.revoke") %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if @endpoints.empty? %>
+        <tr><td colspan="5" class="py-8 text-center text-base-content/50"><%= t("empty.endpoints") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="section-title mb-3 mt-8"><%= t("mcp.create_title") %></h2>
+<%= form_with url: mcp_endpoints_path, method: :post, class: "panel form-panel" do |form| %>
+  <div class="panel-body gap-4">
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :project_id, t("fields.project"), t("hints.mcp_project")) %>
+      <%= form.collection_select :project_id, @projects, :id, ->(project) { "#{project.team.name} / #{project.name}" }, {}, required: true, class: "select w-full" %>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :name, t("fields.name"), t("hints.mcp_name")) %>
+      <%= form.text_field :name, placeholder: t("placeholders.personal_mcp"), class: "input w-full" %>
+    </div>
+    <div class="card-actions justify-end">
+      <%= form.submit t("mcp.create"), class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

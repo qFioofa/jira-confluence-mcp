@@ -1,0 +1,15 @@
+<div class="page-header">
+  <div><h1 class="page-title"><%= t("projects.new_title", team: @team.name) %></h1></div>
+  <div class="page-actions"><%= link_to t("common.back"), team_projects_path(@team), class: "btn btn-sm" %></div>
+</div>
+
+<%= form_with model: [@team, @project], class: "panel form-panel mt-6" do |form| %>
+  <div class="panel-body gap-4">
+    <%= render "form", form: form, project: @project,
+               jira_connections: @team.connections.jira.order(:name),
+               confluence_connections: @team.connections.confluence.order(:name) %>
+    <div class="card-actions justify-end">
+      <%= form.submit t("projects.create"), class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>

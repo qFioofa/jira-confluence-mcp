@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.6"
+          bundler-cache: false
+      - run: bundle install --jobs 4 --retry 3
+        working-directory: lib
+      - run: bundle exec rake test
+        working-directory: lib
+
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.6"
+          bundler-cache: false
+      - run: bundle install --jobs 4 --retry 3
+        working-directory: mcp
+      - run: bundle exec rake test
+        working-directory: mcp
+
+  rails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.6"
+          bundler-cache: false
+      - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libyaml-dev
+      - run: bundle install --jobs 4 --retry 3
+        working-directory: rails
+      - run: bin/rails test
+        working-directory: rails
+
+  docker-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f mcp/Dockerfile -t jira-mcp:ci .

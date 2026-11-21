@@ -1,0 +1,29 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("teams.title") %></h1>
+      <%= hint(t("hints.teams_index")) %>
+    </div>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("teams.create"), new_team_path, class: "btn btn-primary btn-sm" %>
+  </div>
+</div>
+<div class="mt-6 table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.slug") %></th><th></th></tr></thead>
+    <tbody>
+      <% @teams.each do |team| %>
+        <tr>
+          <td><%= team.name %></td>
+          <td class="mono"><%= team.slug %></td>
+          <td><%= link_to t("common.open"), team_path(team), class: "link link-hover" %></td>
+        </tr>
+      <% end %>
+      <% if @teams.empty? %>
+        <tr><td colspan="3" class="py-8 text-center text-base-content/50"><%= t("empty.teams") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

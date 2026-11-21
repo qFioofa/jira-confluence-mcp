@@ -1,0 +1,20 @@
+<% if credential.errors.any? %>
+  <div class="alert alert-error"><%= credential.errors.full_messages.to_sentence %></div>
+<% end %>
+
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :connection_id, t("fields.connection"), t("hints.credential_connection")) %>
+  <%= form.collection_select :connection_id, connections, :id, ->(connection) { "#{connection.team.name} / #{connection.provider} / #{connection.name}" }, {}, required: true, class: "select w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :auth_type, t("fields.auth_type"), t("hints.credential_auth_type")) %>
+  <%= form.select :auth_type, UserCredential.auth_types.keys.map { |key| [key, key] }, {}, class: "select w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :email, t("fields.email"), t("hints.credential_email")) %>
+  <%= form.email_field :email, placeholder: t("placeholders.email"), class: "input w-full" %>
+</div>
+<div class="flex flex-col gap-1.5">
+  <%= field_label(form, :secret, t("fields.secret"), t("hints.credential_secret")) %>
+  <%= form.password_field :secret, required: credential.new_record?, class: "input w-full" %>
+</div>

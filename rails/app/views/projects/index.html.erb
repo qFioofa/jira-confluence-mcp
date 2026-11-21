@@ -1,0 +1,31 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= t("projects.title", team: @team.name) %></h1>
+      <%= hint(t("hints.projects_index")) %>
+    </div>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("projects.add"), new_team_project_path(@team), class: "btn btn-primary btn-sm" %>
+  </div>
+</div>
+<div class="mt-6 table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.slug") %></th><th><%= t("common.columns.jira") %></th><th><%= t("common.columns.spaces") %></th><th></th></tr></thead>
+    <tbody>
+      <% @projects.each do |project| %>
+        <tr>
+          <td><%= project.name %></td>
+          <td class="mono"><%= project.slug %></td>
+          <td class="mono"><%= project.jira_keys.join(", ") %></td>
+          <td class="mono"><%= project.spaces.join(", ") %></td>
+          <td><%= link_to t("common.open"), team_project_path(@team, project), class: "link link-hover" %></td>
+        </tr>
+      <% end %>
+      <% if @projects.empty? %>
+        <tr><td colspan="5" class="py-8 text-center text-base-content/50"><%= t("empty.projects") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

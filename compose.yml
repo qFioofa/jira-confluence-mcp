@@ -1,0 +1,51 @@
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    environment:
+      MCP_PROJECT_ID: ${MCP_PROJECT_ID:-alpha}
+      MCP_PROJECT_NAME: ${MCP_PROJECT_NAME:-}
+      MCP_PROJECT_QUERIES_FILE: ${MCP_PROJECT_QUERIES_FILE:-}
+      JIRA_KEYS: ${JIRA_KEYS:-}
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_DEPLOYMENT: ${JIRA_DEPLOYMENT:-cloud}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      JIRA_PAT: ${JIRA_PAT:-}
+      CONFLUENCE_BASE_URL: ${CONFLUENCE_BASE_URL:-}
+      CONFLUENCE_EMAIL: ${CONFLUENCE_EMAIL:-}
+      CONFLUENCE_API_TOKEN: ${CONFLUENCE_API_TOKEN:-}
+      CONFLUENCE_PAT: ${CONFLUENCE_PAT:-}
+      CLD_SPACE: ${CLD_SPACE:-}
+      MCP_LOCALE: ${MCP_LOCALE:-ru}
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: 8765
+      MCP_HTTP_PATH: /mcp
+      MCP_HTTP_ALLOWED_HOSTS: ${MCP_HTTP_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:8765:8765"
+
+  rails:
+    build:
+      context: .
+      dockerfile: rails/Dockerfile
+    environment:
+      RAILS_ENV: development
+      RAILS_LOG_TO_STDOUT: "1"
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-local-development-secret-key-base-change-me}
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password}
+    ports:
+      - "3000:3000"
+    volumes:
+      - rails_storage:/app/rails/storage
+    command: >
+      sh -c "bin/rails db:prepare &&
+             bin/rails db:seed &&
+             bin/rails server -b 0.0.0.0 -p 3000"
+
+volumes:
+  rails_storage:

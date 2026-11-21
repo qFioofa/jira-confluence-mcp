@@ -1,0 +1,138 @@
+<div class="page-header">
+  <div>
+    <div class="flex items-center gap-2">
+      <h1 class="page-title"><%= @project.name %></h1>
+      <%= hint(t("hints.project_show")) %>
+    </div>
+    <p class="page-subtitle mono"><%= @team.slug %> / <%= @project.slug %></p>
+  </div>
+  <div class="page-actions">
+    <%= link_to t("common.edit"), edit_team_project_path(@team, @project), class: "btn btn-sm" %>
+    <%= button_to t("projects.invalidate_cache"), team_project_clear_cache_path(@team, @project), method: :post, class: "btn btn-outline btn-error btn-sm" %>
+  </div>
+</div>
+<div class="stats-grid mt-6">
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.jira_keys") %></div>
+    <div class="stat-value"><%= @project.jira_keys.length %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.spaces") %></div>
+    <div class="stat-value"><%= @project.spaces.length %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.presets") %></div>
+    <div class="stat-value"><%= @presets.count %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.endpoints") %></div>
+    <div class="stat-value"><%= @endpoints.count %></div>
+  </div>
+</div>
+
+<div class="stats-grid mt-3">
+  <div class="stat-card">
+    <div class="stat-label flex items-center gap-1.5">
+      <%= t("projects.stats.cache_hits") %>
+      <%= hint(t("hints.project_cache")) %>
+    </div>
+    <div class="stat-value"><%= @cache_hits %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.cache_misses") %></div>
+    <div class="stat-value"><%= @cache_misses %></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.hit_rate") %></div>
+    <div class="stat-value"><%= @cache_hit_rate %>%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><%= t("projects.stats.cache_strategies") %></div>
+    <div class="stat-value text-base">
+      <%= link_to t("common.configure"), team_project_cache_strategies_path(@team, @project), class: "link link-hover" %>
+    </div>
+  </div>
+</div>
+
+
+<div class="mb-3 mt-8 flex items-center gap-2">
+  <h2 class="section-title"><%= t("projects.sections.recent_calls") %></h2>
+  <%= hint(t("hints.project_calls")) %>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.time") %></th><th><%= t("common.columns.tool") %></th><th><%= t("common.columns.status") %></th><th class="text-right"><%= t("common.columns.ms") %></th></tr></thead>
+    <tbody>
+      <% @recent_calls.each do |call| %>
+        <tr>
+          <td class="mono"><%= call.created_at.utc.iso8601 %></td>
+          <td><%= call.tool %></td>
+          <td><%= status_badge(call.outcome) %></td>
+          <td class="text-right"><%= call.duration_ms %></td>
+        </tr>
+      <% end %>
+      <% if @recent_calls.empty? %>
+        <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("projects.empty.calls") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="mb-3 mt-8 flex items-center gap-2">
+  <h2 class="section-title"><%= t("projects.sections.presets") %></h2>
+  <%= hint(t("hints.project_presets")) %>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.kind") %></th><th><%= t("common.columns.key") %></th><th><%= t("common.columns.label") %></th><th><%= t("common.columns.query") %></th></tr></thead>
+    <tbody>
+      <% @presets.each do |preset| %>
+        <tr>
+          <td><%= preset.kind %></td>
+          <td class="mono"><%= preset.key %></td>
+          <td><%= preset.label %></td>
+          <td class="mono"><%= preset.query %></td>
+        </tr>
+      <% end %>
+      <% if @presets.empty? %>
+        <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("projects.empty.presets") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="mb-3 mt-8 flex items-center gap-2">
+  <h2 class="section-title"><%= t("projects.sections.endpoints") %></h2>
+  <%= hint(t("hints.project_endpoints")) %>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th><%= t("common.columns.name") %></th><th><%= t("common.columns.prefix") %></th><th><%= t("common.columns.last_used") %></th><th></th></tr></thead>
+    <tbody>
+      <% @endpoints.each do |endpoint| %>
+        <tr>
+          <td><%= endpoint.name %></td>
+          <td class="mono"><%= endpoint.token_prefix %>…</td>
+          <td class="text-base-content/60"><%= endpoint.last_used_at || t("common.never") %></td>
+          <td><%= button_to t("common.revoke"), mcp_endpoint_path(endpoint), method: :delete, class: "btn btn-xs btn-ghost text-error" %></td>
+        </tr>
+      <% end %>
+      <% if @endpoints.empty? %>
+        <tr><td colspan="4" class="py-8 text-center text-base-content/50"><%= t("projects.empty.endpoints") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<%= form_with url: mcp_endpoints_path, method: :post, class: "panel form-panel mt-6" do |form| %>
+  <div class="panel-body gap-4">
+    <%= form.hidden_field :project_id, value: @project.id %>
+    <div class="flex flex-col gap-1.5">
+      <%= field_label(form, :name, t("fields.endpoint_name"), t("hints.project_endpoint_hint")) %>
+      <%= form.text_field :name, value: "#{@project.name} MCP", class: "input w-full" %>
+    </div>
+    <div class="card-actions justify-end">
+      <%= form.submit t("projects.create_endpoint"), class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>
