@@ -324,17 +324,17 @@ Rails-эндpoint: `match "/mcp/:token"`, rate limit `120` запросов/ми
 ```yaml
 # config/queries.yml
 queries:
-  jql:
-    review:
-      label: На ревью
-      query: assignee = currentUser() AND status = "Код-ревью"
-      order_by: updated DESC
-      default_limit: 20
-  cql:
-    runbooks:
-      label: Runbooks
-      query: label = runbook AND type = page
-      default_limit: 10
+    jql:
+        review:
+            label: На ревью
+            query: assignee = currentUser() AND status = "Код-ревью"
+            order_by: updated DESC
+            default_limit: 20
+    cql:
+        runbooks:
+            label: Runbooks
+            query: label = runbook AND type = page
+            default_limit: 10
 ```
 
 ```bash
@@ -348,30 +348,30 @@ MCP_PROJECT_QUERIES_FILE=config/queries.yml
 
 # Поведение и вывод
 
-| Переменная                | По умолчанию   | Что делает                                  |
-| ------------------------- | -------------- | ------------------------------------------- |
-| `MCP_LOCALE`              | `ru`           | локаль сообщений сервера (`ru`/`en`)        |
-| `OUTPUT_LANG`             | `MCP_LOCALE`   | язык ответов tools                          |
-| `OUTPUT_CHAR_LIMIT`       | `24000`        | лимит символов ответа, дальше `truncated`   |
-| `QUERY_MAX_CHARS`         | `2000`         | максимум длины JQL/CQL                      |
-| `TEAM_SHOW_EMAIL`         | `0`            | показывать email в `team_*`                 |
-| `TEAM_WINDOW_DAYS`        | `180`          | окно активности для `team_who_knows`        |
-| `HTTP_TIMEOUT_MS`         | `20000`        | таймаут запросов к Atlassian                |
-| `HTTP_KEEP_ALIVE`         | `1`            | persistent connections                      |
-| `HTTP_KEEP_ALIVE_TIMEOUT` | `30`           | idle timeout keep-alive                     |
-| `CACHE_ENABLED`           | `1`            | кэш ответов                                 |
-| `CACHE_SEARCH`            | `0`            | кэшировать поисковые ответы                 |
-| `CACHE_STALE_GRACE`       | `600`          | сек. отдачи устаревших данных при ошибке    |
-| `STATS_ENABLED`           | `0` standalone | сбор статистики вызовов                     |
+| Переменная                | По умолчанию   | Что делает                                                       |
+| ------------------------- | -------------- | ---------------------------------------------------------------- |
+| `MCP_LOCALE`              | `ru`           | локаль сообщений сервера (`ru`/`en`)                             |
+| `OUTPUT_LANG`             | `MCP_LOCALE`   | язык ответов tools                                               |
+| `OUTPUT_CHAR_LIMIT`       | `24000`        | лимит символов ответа, дальше `truncated`                        |
+| `QUERY_MAX_CHARS`         | `2000`         | максимум длины JQL/CQL                                           |
+| `TEAM_SHOW_EMAIL`         | `0`            | показывать email в `team_*`                                      |
+| `TEAM_WINDOW_DAYS`        | `180`          | окно активности для `team_who_knows`                             |
+| `HTTP_TIMEOUT_MS`         | `20000`        | таймаут запросов к Atlassian                                     |
+| `HTTP_KEEP_ALIVE`         | `1`            | persistent connections                                           |
+| `HTTP_KEEP_ALIVE_TIMEOUT` | `30`           | idle timeout keep-alive                                          |
+| `CACHE_ENABLED`           | `1`            | кэш ответов                                                      |
+| `CACHE_SEARCH`            | `0`            | кэшировать поисковые ответы                                      |
+| `CACHE_STALE_GRACE`       | `600`          | сек. отдачи устаревших данных при ошибке                         |
+| `STATS_ENABLED`           | `0` standalone | сбор статистики вызовов                                          |
 | `GIT_REPOS`               | пусто          | JSON-массив локальных репозиториев для `git_experts` и контекста |
-| `GIT_AUTHOR_MAP`          | пусто          | JSON-маппинг git author → Jira account      |
+| `GIT_AUTHOR_MAP`          | пусто          | JSON-маппинг git author → Jira account                           |
 
 Git-доступ только локальный и read-only: `git log/show/grep` по allowlist
 репозиториев из `GIT_REPOS` (или `Project.settings["git_repos"]` в Rails).
 `git_experts` ранжирует вероятных экспертов по коммитам и свежести; это
 сигнал, а не подтверждённый владелец.
-| `STATS_RETENTION_DAYS`    | `7`            | срок хранения статистики                    |
-| `LOG_LEVEL`               | `info`         | `debug`/`info`/`warn`/`error`; лог в stderr |
+| `STATS_RETENTION_DAYS` | `7` | срок хранения статистики |
+| `LOG_LEVEL` | `info` | `debug`/`info`/`warn`/`error`; лог в stderr |
 
 Булевы значения: `1`, `true`, `yes`, `on` — включено; пусто/`0` — выключено.
 
@@ -425,7 +425,7 @@ Git-доступ только локальный и read-only: `git log/show/gre
 | `406 Not Acceptable` на `/mcp`           | клиент не прислал `Accept: application/json, text/event-stream`         |
 | `403` от транспорта                      | `Host` не разрешён: добавьте его в `MCP_HTTP_ALLOWED_HOSTS`             |
 | Пустые результаты JQL                    | `JIRA_KEYS` не совпадает с реальными ключами проекта                    |
-| `query_preset_unknown`                   | нет такого preset; список — в `error.details.available_presets`          |
+| `query_preset_unknown`                   | нет такого preset; список — в `error.details.available_presets`         |
 | Rails `user_credential_missing`          | добавьте credential на `/user_credentials/new`                          |
 | Rails `invalid or revoked MCP token`     | токен отозван или скопирован неверно; создайте новый в `/mcp_endpoints` |
 
@@ -440,3 +440,4 @@ Git-доступ только локальный и read-only: `git log/show/gre
   в stderr и не содержат токенов.
 
 Лицензия: [MIT](LICENSE).
+[![M8ven Score](https://m8ven.ai/badge/mcp/qfioofa-ruby-jira-mcp-190f11?v=7be40fa47b1cb6cda52100b4646b7364)](https://m8ven.ai/mcp/qfioofa-ruby-jira-mcp-190f11?s=readme)
